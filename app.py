@@ -8,6 +8,14 @@ from datetime import datetime, timedelta
 import os
 from functools import wraps
 
+# Importação condicional para Socket.IO
+try:
+    from flask_socketio import SocketIO, emit
+    socketio_available = True
+except ImportError:
+    socketio_available = False
+    print("WARNING: flask-socketio not available. Falling back to traditional HTTP polling.")
+
 """
 Olho de Tandera: Sistema de Controle Remoto para Páginas Web
 =============================================================
@@ -18,7 +26,7 @@ a visibilidade de elementos em páginas remotas sem necessidade de atualização
 
 Autores: MrCl0wn Security Lab
 Data de criação: Maio/2025
-Versão: 1.0
+Versão: 1.0 (Atualizado com WebSockets)
 """
 
 # Configuração para compatibilidade Windows com MIME types
@@ -28,6 +36,19 @@ mimetypes.add_type('application/javascript', '.js')
 # Inicialização e configuração do aplicativo Flask
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_change_in_production')
+
+# Configuração do Socket.IO se disponível
+if socketio_available:
+    try:
+        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+        print("Socket.IO inicializado com sucesso no modo threading")
+    except Exception as e:
+        socketio_available = False
+        print(f"Falha ao inicializar Socket.IO: {e}")
+        print("Caindo para o modo HTTP polling tradicional")
+else:
+    # Variável dummy para evitar erros
+    socketio = None
 
 # Credenciais de autenticação para o painel de administração
 # AVISO DE SEGURANÇA: Em ambiente de produção, estas credenciais devem estar em
@@ -41,6 +62,7 @@ ADMIN_PASSWORD_HASH = generate_password_hash(ADMIN_PASSWORD)
 commands = {'default': {"id": str(uuid.uuid4()), "command": "", "timestamp": datetime.now().isoformat()}}
 clients = {}  # Armazena informações sobre os clientes conectados
 command_logs = []  # Histórico de comandos enviados
+socket_clients = {}  # Mapeia client_id para session_id do Socket.IO
 
 # Decorator para proteger rotas que exigem autenticação
 def login_required(f):
@@ -206,11 +228,23 @@ def set_command():
         # Envia para todos os clientes conectados
         for cid in clients:
             commands[cid] = command_data
+            # Se o cliente estiver conectado por WebSockets e Socket.IO estiver disponível, enviar diretamente
+            if socketio_available and cid in socket_clients:
+                socketio.emit('command', command_data, room=socket_clients[cid])
+        
         # Atualiza também o comando padrão
         commands['default'] = command_data
+        
+        # Enviar comando para todos os clientes WebSocket não associados a IDs específicos
+        if socketio_available:
+            socketio.emit('command', command_data, broadcast=True)
     else:
         # Envia apenas para o cliente específico
         commands[client_id] = command_data
+        
+        # Se o cliente estiver conectado por WebSockets e Socket.IO estiver disponível, enviar diretamente
+        if socketio_available and client_id in socket_clients:
+            socketio.emit('command', command_data, room=socket_clients[client_id])
     
     # Registra o comando no histórico de logs
     log_entry = {
@@ -250,7 +284,8 @@ def get_clients():
             "active": client.get("last_seen", "") > cleanup_str,
             "last_seen": client.get("last_seen", ""),
             "user_agent": client.get("user_agent", ""),
-            "ip": client.get("ip", "")
+            "ip": client.get("ip", ""),
+            "websocket": client_id in socket_clients  # Indica se o cliente está usando WebSockets
         }
         for client_id, client in clients.items()
     ]
@@ -268,6 +303,13 @@ def remove_client(client_id):
         del clients[client_id]
         if client_id in commands:
             del commands[client_id]
+            
+        # Se o cliente estiver conectado por WebSockets e Socket.IO estiver disponível, notificá-lo para desconectar
+        if socketio_available and client_id in socket_clients:
+            socketio.emit('disconnect_request', room=socket_clients[client_id])
+            # Remover do mapeamento de socket_clients (a conexão Socket.IO real será encerrada pelo cliente)
+            del socket_clients[client_id]
+            
         return jsonify({"success": True})
     else:
         return jsonify({"success": False, "error": "Client not found"}), 404
@@ -302,6 +344,13 @@ def serve_cmd_js():
     Este arquivo é responsável por verificar e executar os comandos recebidos.
     """
     response = send_from_directory('static/js', 'cmd.js', mimetype='application/javascript')
+    response.headers['Cache-Control'] = 'public, max-age=604800'
+    return response
+
+@app.route('/js/socket.io.min.js')
+def serve_socketio_js():
+    """Rota para servir a biblioteca cliente do Socket.IO"""
+    response = send_from_directory('static/js', 'socket.io.min.js', mimetype='application/javascript')
     response.headers['Cache-Control'] = 'public, max-age=604800'
     return response
 
@@ -362,8 +411,111 @@ def get_command():
     
     return response
 
+# Socket.IO eventos - definidos apenas se o Socket.IO estiver disponível
+if socketio_available:
+    @socketio.on('connect')
+    def handle_connect():
+        """Manipula novas conexões WebSocket"""
+        print(f"[WebSocket] Nova conexão: {request.sid}")
+
+    @socketio.on('register')
+    def handle_register(data):
+        """
+        Registra um cliente conectado via WebSocket.
+        Recebe o ID do cliente e o associa à sessão WebSocket atual.
+        """
+        client_id = data.get('client_id')
+        if not client_id:
+            return
+        
+        session_id = request.sid
+        print(f"[WebSocket] Cliente registrado: {client_id}, Session: {session_id}")
+        
+        # Associar client_id à sessão WebSocket
+        socket_clients[client_id] = session_id
+        
+        # Registra ou atualiza informações do cliente
+        if client_id not in clients:
+            clients[client_id] = {}
+            # Inicializa comando para novo cliente
+            if client_id not in commands:
+                commands[client_id] = commands.get('default', {"id": "", "command": "", "timestamp": ""})
+        
+        # Atualiza informações do cliente
+        clients[client_id].update({
+            "last_seen": datetime.now().isoformat(),
+            "user_agent": request.headers.get('User-Agent', ''),
+            "ip": request.remote_addr,
+            "connection_type": "websocket"
+        })
+        
+        # Notificar admin sobre o novo cliente conectado
+        socketio.emit('client_update', {
+            "action": "connect",
+            "client": {
+                "id": client_id,
+                "active": True,
+                "last_seen": clients[client_id]["last_seen"],
+                "websocket": True
+            }
+        }, room='admin')
+        
+        # Enviar último comando para o cliente
+        if client_id in commands:
+            current_command = commands[client_id]
+            emit('command', current_command)
+
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        """Manipula desconexões WebSocket"""
+        session_id = request.sid
+        
+        # Encontrar qual client_id está associado a esta sessão
+        client_id = None
+        for cid, sid in socket_clients.items():
+            if sid == session_id:
+                client_id = cid
+                break
+        
+        if client_id:
+            print(f"[WebSocket] Cliente desconectado: {client_id}")
+            
+            # Remover mapeamento, mas manter o cliente nos registros
+            # (pode reconectar mais tarde ou usar polling)
+            del socket_clients[client_id]
+            
+            # Atualizar status do cliente
+            if client_id in clients:
+                clients[client_id]["connection_type"] = "disconnected"
+            
+            # Notificar admin sobre a desconexão
+            socketio.emit('client_update', {
+                "action": "disconnect",
+                "client_id": client_id
+            }, room='admin')
+        else:
+            print(f"[WebSocket] Sessão desconectada: {session_id} (sem cliente associado)")
+
+    @socketio.on('join_admin')
+    def handle_join_admin():
+        """Administradores se juntam à sala 'admin' para receber atualizações em tempo real"""
+        if 'logged_in' in session:
+            session_id = request.sid
+            socketio.server.enter_room(session_id, 'admin')
+            print(f"[WebSocket] Admin entrou na sala: {session_id}")
+            emit('admin_joined', {"success": True})
+        else:
+            emit('admin_joined', {"success": False, "error": "Não autorizado"})
+
 if __name__ == '__main__':
-    # Inicialização do servidor
-    # AVISO DE SEGURANÇA: Em produção, use HTTPS:
-    # app.run(ssl_context='adhoc', debug=False)
-    app.run(debug=True)
+    if socketio_available:
+        try:
+            # Inicialização do servidor com Socket.IO
+            socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+        except Exception as e:
+            print(f"Erro ao iniciar com Socket.IO: {e}")
+            print("Iniciando no modo Flask padrão...")
+            app.run(debug=True)
+    else:
+        # Fallback para Flask padrão sem Socket.IO
+        app.run(debug=True)

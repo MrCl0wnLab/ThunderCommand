@@ -3,7 +3,9 @@
 <head>
     <title>Painel de Administração - Olhar de Tandera</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin-panel.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/socket.io.min.js"></script>
 </head>
 <body>
     <div class="navbar">
@@ -417,10 +419,10 @@
                 .then(data => {
                     if (data.clients && data.clients.length > 0) {
                         const clientsHtml = data.clients.map(client => `
-                            <div class="client-card ${client.active ? 'client-online' : 'client-offline'}">
+                            <div class="client-card ${client.active ? 'client-online' : 'client-offline'} ${client.websocket ? 'client-websocket' : ''}">
                                 <div class="client-info">
                                     <p><strong>ID:</strong> ${client.id}</p>
-                                    <p><strong>Status:</strong> ${client.active ? 'Online' : 'Offline'}</p>
+                                    <p><strong>Status:</strong> ${client.active ? 'Online' : 'Offline'} ${client.websocket ? '(WebSocket)' : '(Polling)'}</p>
                                     <p><strong>Última atividade:</strong> ${new Date(client.last_seen).toLocaleString()}</p>
                                 </div>
                                 <div class="client-actions">
@@ -456,7 +458,7 @@
             clients.forEach(client => {
                 const option = document.createElement('option');
                 option.value = client.id;
-                option.textContent = `Cliente: ${client.id.substring(0, 8)}... ${client.active ? '(online)' : '(offline)'}`;
+                option.textContent = `Cliente: ${client.id.substring(0, 8)}... ${client.active ? '(online)' : '(offline)'} ${client.websocket ? '⚡' : ''}`;
                 dropdown.appendChild(option);
             });
         }
@@ -520,9 +522,62 @@
                 });
         }
         
+        // Conexão WebSocket para Admin
+        let socket = null;
+        
+        function initWebSocket() {
+            try {
+                // Inicializar Socket.IO
+                socket = io();
+                
+                // Evento de conexão
+                socket.on('connect', function() {
+                    console.log('Admin conectado via WebSocket');
+                    document.getElementById('connection-type').textContent = 'Modo: WebSocket';
+                    document.getElementById('connection-type').className = 'badge websocket';
+                    
+                    // Administrador se junta à sala admin
+                    socket.emit('join_admin');
+                });
+                
+                // Receber confirmação de admin
+                socket.on('admin_joined', function(data) {
+                    if (data.success) {
+                        console.log('Admin entrou na sala de administração');
+                    } else {
+                        console.error('Erro ao entrar na sala de administração:', data.error);
+                    }
+                });
+                
+                // Atualização de clientes em tempo real
+                socket.on('client_update', function(data) {
+                    console.log('Atualização de cliente em tempo real:', data);
+                    refreshClients(); // Atualizar lista de clientes
+                });
+                
+                // Evento de desconexão
+                socket.on('disconnect', function() {
+                    console.log('Admin desconectado do WebSocket');
+                    document.getElementById('connection-type').textContent = 'Modo: Polling';
+                    document.getElementById('connection-type').className = 'badge polling';
+                });
+                
+                // Reconexão
+                socket.on('reconnect', function() {
+                    console.log('Admin reconectado via WebSocket');
+                    socket.emit('join_admin');
+                });
+            } catch (e) {
+                console.error('Erro ao inicializar WebSocket:', e);
+                document.getElementById('connection-type').textContent = 'Modo: Polling (Erro WebSocket)';
+                document.getElementById('connection-type').className = 'badge polling';
+            }
+        }
+        
         // Inicializar
         document.addEventListener('DOMContentLoaded', function() {
             refreshClients();
+            initWebSocket();
         });
     </script>
 </body>

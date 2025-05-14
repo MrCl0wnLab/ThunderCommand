@@ -1,0 +1,45 @@
+/* Estilo específico para o painel admin - Integração WebSockets */
+.badge {
+    display: inline-block;
+    padding: 3px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    background-color: #777;
+    border-radius: 10px;
+    margin-left: 10px;
+}
+
+.badge.websocket {
+    background-color: #28a745;
+}
+
+.badge.polling {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.client-icon {
+    margin-right: 5px;
+    font-size: 16px;
+}
+
+.client-online {
+    border-left: 4px solid #28a745;
+    padding-left: 10px;
+}
+
+.client-offline {
+    border-left: 4px solid #dc3545;
+    padding-left: 10px;
+}
+
+.client-websocket::after {
+    content: "⚡";
+    margin-left: 5px;
+    color: #28a745;
+}

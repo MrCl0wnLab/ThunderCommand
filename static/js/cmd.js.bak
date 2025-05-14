@@ -5,8 +5,6 @@
  * Este módulo implementa um cliente para recebimento de comandos JavaScript remotos,
  * permitindo a execução de comandos enviados por um servidor central. O sistema suporta:
  * 
- * - Conexão via WebSockets para comunicação bidirecional em tempo real
- * - Fallback para polling quando WebSockets não está disponível
  * - Arquivos locais (via JSONP para contornar restrições de CORS)
  * - Páginas servidas por servidor (via fetch API)
  * - Reconexão automática com estratégia de backoff exponencial
@@ -14,7 +12,7 @@
  * - Identificação persistente de clientes via localStorage
  * 
  * Autor: Administrador do Projeto
- * Versão: 2.0
+ * Versão: 1.0
  * Última atualização: Maio/2025
  */
 
@@ -30,9 +28,6 @@ const PushClient = (function() {
     let isLocalFile = false;           // Flag para detectar se estamos em arquivo local
     let clientId = '';                 // ID único do cliente
     let connectionStatus = 'disconnected'; // Estado atual da conexão
-    let socket = null;                 // Objeto de conexão WebSocket
-    let useWebSocket = true;           // Flag para indicar uso de WebSockets (default) ou fallback
-    let wsConnected = false;           // Estado da conexão WebSocket
     
     // Cache para elementos DOM frequentemente acessados
     let statusElement = null;          // Elemento para exibir status da conexão
@@ -63,9 +58,6 @@ const PushClient = (function() {
     function init() {
         console.log('Iniciando cliente controle remoto');
         
-        // Verifica disponibilidade de WebSocket no navegador
-        useWebSocket = window.WebSocket || window.MozWebSocket;
-        
         // Determina a origem do servidor baseado no script atual
         serverOrigin = new URL(document.currentScript.src).origin;
         isLocalFile = (window.location.protocol === 'file:');
@@ -74,7 +66,6 @@ const PushClient = (function() {
         console.log('Server origin:', serverOrigin);
         console.log('Command endpoint:', commandEndpoint);
         console.log('Is local file:', isLocalFile);
-        console.log('WebSocket disponível:', !!useWebSocket);
         
         // Gerar ID único para o cliente ou recuperar um existente
         clientId = localStorage.getItem('clientId');
@@ -108,134 +99,18 @@ const PushClient = (function() {
     }
     
     /**
-     * Tenta estabelecer conexão WebSocket, com fallback para polling
+     * Inicia a conexão e o polling de comandos
      */
     function connect() {
-        // Se WebSocket estiver disponível e não estivermos em um arquivo local, usar WebSockets
-        if (useWebSocket && !isLocalFile) {
-            connectWebSocket();
-        } else {
-            // Fallback para polling
-            console.log('WebSocket indisponível ou arquivo local. Usando polling como fallback.');
-            updateConnectionStatus('connected');
-            checkForCommands();
-        }
-    }
-    
-    /**
-     * Estabelece conexão WebSocket com o servidor
-     */
-    function connectWebSocket() {
-        updateConnectionStatus('connecting');
-        
-        try {
-            // Carregar Socket.IO
-            if (typeof io !== 'function') {
-                // Se a biblioteca Socket.IO ainda não foi carregada, carregá-la
-                console.log('Carregando biblioteca Socket.IO');
-                const script = document.createElement('script');
-                script.src = `${serverOrigin}/js/socket.io.min.js`;
-                script.onload = initializeSocketIO;
-                script.onerror = fallbackToPolling;
-                document.head.appendChild(script);
-            } else {
-                // Se a biblioteca já está carregada, inicializar
-                initializeSocketIO();
-            }
-        } catch (e) {
-            console.error('Erro ao conectar WebSocket:', e);
-            fallbackToPolling();
-        }
-    }
-    
-    /**
-     * Inicializar a conexão Socket.IO
-     */
-    function initializeSocketIO() {
-        try {
-            console.log('Inicializando Socket.IO');
-            socket = io(serverOrigin);
-            
-            socket.on('connect', () => {
-                console.log('WebSocket conectado!');
-                wsConnected = true;
-                updateConnectionStatus('connected');
-                
-                // Registrar cliente com ID
-                socket.emit('register', { client_id: clientId });
-                
-                // Resetar contagem de tentativas
-                retryCount = 0;
-            });
-            
-            socket.on('command', (data) => {
-                console.log('Comando recebido via WebSocket:', data);
-                if (data && data.command) {
-                    lastCommandId = data.id;
-                    executeCommand(data.command);
-                    updateStatus(`Comando executado às ${new Date().toLocaleTimeString()} (WebSocket)`);
-                }
-            });
-            
-            socket.on('disconnect_request', () => {
-                console.log('Solicitação de desconexão recebida');
-                socket.disconnect();
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('WebSocket desconectado');
-                wsConnected = false;
-                
-                if (retryCount < maxRetry) {
-                    updateConnectionStatus('disconnected');
-                    setTimeout(() => {
-                        socket.connect();
-                    }, 1000 * Math.pow(2, retryCount));
-                    retryCount++;
-                } else {
-                    console.log('Máximo de tentativas WebSocket atingido, usando polling');
-                    fallbackToPolling();
-                }
-            });
-            
-            socket.on('error', (error) => {
-                console.error('Erro no WebSocket:', error);
-                fallbackToPolling();
-            });
-            
-        } catch (e) {
-            console.error('Erro ao inicializar Socket.IO:', e);
-            fallbackToPolling();
-        }
-    }
-    
-    /**
-     * Fallback para polling quando WebSocket falha
-     */
-    function fallbackToPolling() {
-        console.log('Usando polling como fallback');
-        useWebSocket = false;
-        wsConnected = false;
-        
-        if (socket) {
-            socket.disconnect();
-            socket = null;
-        }
-        
         updateConnectionStatus('connected');
         checkForCommands();
     }
     
     /**
-     * Verifica se há novos comandos no servidor usando polling
+     * Verifica se há novos comandos no servidor
      * Escolhe método apropriado baseado no tipo de carregamento da página
      */
     function checkForCommands() {
-        // Se já estamos conectados por WebSocket, não precisamos de polling
-        if (wsConnected) {
-            return;
-        }
-        
         if (isLocalFile) {
             // Para arquivos locais (file://), usamos JSONP para contornar CORS
             useJSONP();
@@ -428,8 +303,7 @@ const PushClient = (function() {
     return {
         handleCommand,       // Exposto para JSONP
         updateStatus,        // Exposto para acesso/debugging externo
-        executeCommand,      // Exposto para testes/debugging
-        isWebSocketActive: () => wsConnected // Status da conexão WebSocket para debugging
+        executeCommand       // Exposto para testes/debugging
     };
 })();
 

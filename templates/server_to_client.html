@@ -109,17 +109,14 @@
     </div>
 
     <!-- 
-        Script cliente para receber comandos
-        Este script irá:
-        1. Conectar ao servidor
+        Scripts cliente para receber comandos
+        Este sistema irá:
+        1. Conectar ao servidor via WebSockets (com fallback para polling)
         2. Obter um ID de cliente único
-        3. Verificar periodicamente por novos comandos
-        4. Executar comandos JavaScript remotos
-        5. Atualizar o status da conexão
+        3. Executar comandos JavaScript em tempo real
+        4. Atualizar o status da conexão
     -->
     <script src="http://localhost:5000/js/cmd.js"></script>
-    
- 
     
 </body>
 

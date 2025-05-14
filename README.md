@@ -1,11 +1,12 @@
 # Olho de Tandera: Sistema de Controle Remoto para Páginas Web
 
-Este projeto implementa um sistema de comunicação unidirecional de servidor para cliente, permitindo que um administrador execute comandos JavaScript remotamente em páginas web em tempo real, sem necessidade de atualização da página.
+Este projeto implementa um sistema de comunicação bidirecional entre servidor e cliente, permitindo que um administrador execute comandos JavaScript remotamente em páginas web em tempo real, sem necessidade de atualização da página.
 
 ## Funcionalidades
 
 O sistema permite que um administrador:
 
+- **Comunique em tempo real via WebSockets** com clientes conectados
 - **Execute código JavaScript** em tempo real em páginas cliente
 - **Inserir conteúdo HTML** diretamente no corpo das páginas
 - **Manipule elementos específicos** por ID (adicionar, substituir, inserir conteúdo)
@@ -16,29 +17,30 @@ O sistema permite que um administrador:
 
 ## Arquitetura do Sistema
 
-O sistema funciona através de polling, onde cada cliente verifica periodicamente se há novos comandos a serem executados:
+O sistema funciona primariamente com WebSockets, com fallback para polling:
 
 ```
 +-------------+        +-------------+        +----------------+
-| Painel Admin| -----> | Servidor    | <----- | Páginas Cliente|
-| (admin.html)| envia  | (Flask)     | polling| (JavaScript)   |
-+-------------+ comando+-------------+ comando+----------------+
+| Painel Admin| <----> | Servidor    | <----> | Páginas Cliente|
+| (admin.html)| WebSkt | (Flask      | WebSkt | (JavaScript)   |
++-------------+ ou HTTP| SocketIO)   | ou HTTP+----------------+
 ```
 
 ## Estrutura do Projeto
 
 ```
-projeto_push/
-├── app.py                  # Servidor Flask e lógica de backend
-├── favicon.ico             # Ícone do site
+Olho-de-Tandera/
+├── app.py                  # Servidor Flask, Socket.IO e lógica de backend
 ├── requirements.txt        # Dependências do projeto
 ├── static/
 │   ├── favicon.ico         # Ícone do site para o servidor estático
 │   ├── css/
-│   │   └── style.css       # Estilos CSS para interfaces
+│   │   ├── style.css       # Estilos CSS para interfaces
+│   │   └── admin-panel.css # Estilos específicos para o painel admin
 │   └── js/
-│       ├── cmd.js          # Cliente JavaScript de notificações push
-│       └── old_cmd.js      # Versão anterior (para referência)
+│       ├── cmd.js          # Cliente JavaScript com WebSockets e fallback
+│       ├── cmd.js.bak      # Backup da versão anterior
+│       └── socket.io.min.js # Biblioteca cliente de Socket.IO
 └── templates/
     ├── admin.html          # Painel de administração para enviar comandos
     ├── login.html          # Página de autenticação para o painel admin
@@ -102,6 +104,7 @@ O painel de administração oferece várias opções para enviar comandos:
 ### Clientes Conectados
 
 - O painel exibe todos os clientes ativos
+- O ícone ⚡ indica conexões via WebSockets
 - Cada cliente possui um ID único persistente (armazenado no localStorage do navegador)
 - Clientes inativos por mais de 30 minutos são marcados como offline
 - Comandos podem ser direcionados a clientes específicos ou para todos
@@ -128,35 +131,37 @@ Para integrar o sistema em páginas existentes, basta incluir o script cliente:
 - O sistema permite a execução de código JavaScript arbitrário
 - Em produção, sempre use HTTPS para evitar interceptação de comandos
 - Configure o sistema para verificar a origem das requisições (CORS)
+- Configure permissões para conexões Socket.IO
 - Use sempre credenciais seguras para o painel administrativo
 - Considere implementar validação avançada para os comandos
 - Não use em ambientes públicos sem medidas de segurança adicionais
 
 ## Funcionamento Técnico
 
-### Backend (Flask)
+### Backend (Flask + Socket.IO)
 
+- Comunicação em tempo real via WebSockets usando Socket.IO
+- Fallback automático para HTTP polling quando WebSockets não disponível
 - O servidor armazena comandos em memória para cada cliente
-- Implementa autenticação básica para o painel administrativo
 - Fornece APIs para envio e recuperação de comandos
-- Suporta JSONP para casos de uso em arquivos locais
 
 ### Frontend (JavaScript)
 
-- O cliente verifica periodicamente novos comandos (polling a cada 5 segundos)
-- Executa comandos usando construtor `Function` para avaliar JavaScript
-- Implementa reconexão automática com backoff exponencial
+- Tenta estabelecer conexão WebSocket como método preferencial
+- Implementa fallback automático para polling HTTP
 - Suporta arquivos locais através de JSONP
+- Implementa reconexão automática com backoff exponencial
 
 ## Casos de Uso
 
 - Coleta informacional de dados em tempo real
-- Modificação de pagina em tempo real
+- Modificação de páginas em tempo real
 - Notificações em tempo real para usuários
 - Correção de bugs em páginas em produção sem necessidade de redeploy
 - Testes A/B dinâmicos
 - Adaptação da interface baseada em eventos do servidor
 - Mensagens de manutenção temporárias
+- Chat e sistemas interativos em tempo real
 
 ## Desenvolvimento
 
