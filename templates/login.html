@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Página de login para o painel de administração do sistema de notificações push">
+    <title>Login - Painel de Administração</title>
+    
+    <!-- 
+        Estilos da página de login
+        - Utiliza design minimalista e responsivo
+        - Centralização vertical e horizontal do formulário
+        - Feedback visual para erros de autenticação
+     -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            max-width: 90%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .info {
+            margin-top: 20px;
+            font-size: 13px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- 
+        Container do formulário de login
+        - Centralizado na tela para melhor experiência do usuário
+        - Design clean para foco na ação de autenticação
+    -->
+    <div class="login-container">
+        <h1>Login Administrativo</h1>
+        
+        <!-- 
+            Bloco de erro mostrado apenas quando houver falha na autenticação
+            Utiliza template engine do Flask (Jinja2) para renderização condicional
+        -->
+        {% if error %}
+        <div class="error">
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <!-- 
+            Formulário de autenticação
+            - Método POST para segurança (não exibe credenciais na URL)
+            - Validação básica no lado cliente com 'required'
+            - Autofocus para melhor usabilidade
+        -->
+        <form method="post">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" name="username" required autofocus 
+                       placeholder="Nome de usuário administrativo">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" name="password" required
+                       placeholder="Senha de acesso">
+            </div>
+            
+            <button type="submit">Entrar</button>
+        </form>
+        
+        <!-- Informações adicionais para o usuário -->
+        <div class="info">
+            <p>Acesso restrito ao painel de administração do sistema de Olhar de Tandera.</p>
+            <p>Em caso de problemas de acesso, contate o administrador.</p>
+        </div>
+    </div>
+    
+    <!-- 
+        Script de segurança básico para evitar que a página de login
+        seja carregada dentro de um iframe (proteção contra clickjacking)
+    -->
+    <script>
+        if (window.self !== window.top) {
+            window.top.location.href = window.location.href;
+        }
+    </script>
+</body>
+</html>

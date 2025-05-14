@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Página cliente para demonstração do Sistema de Recebimendo de Comandos">
+    <title>Página de Teste - Olho de Tandera</title>
+    
+    <!-- 
+        Estilos da página cliente
+        - Define aparência básica e estilo do elemento de status
+        - Classes adicionais serão aplicadas dinamicamente pelo script cmd.js
+    -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        #status {
+            margin: 15px 0;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            border-left: 4px solid #999;
+            font-family: monospace;
+        }
+
+        /* Estilos para diferentes estados de conexão - aplicados via JavaScript */
+        .connected {
+            background-color: #e6f7e6 !important;
+            border-left-color: #28a745 !important;
+        }
+
+        .disconnected {
+            background-color: #fff3cd !important;
+            border-left-color: #ffc107 !important;
+        }
+
+        .error {
+            background-color: #f8d7da !important;
+            border-left-color: #dc3545 !important;
+        }
+
+        .connecting {
+            background-color: #e1f0ff !important;
+            border-left-color: #0d6efd !important;
+        }
+        
+        .example-section {
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Cabeçalho da página -->
+    <h1>Página Cliente - Recebendo Olhar de Tandera</h1>
+    <!-- Descrição do funcionamento -->
+    <p>
+        Esta página demonstra o funcionamento do Sistema de Recebimendo de Comandos remotos.
+        O servidor pode enviar comandos JavaScript que serão executados nesta página em tempo real,
+        sem necessidade de atualização.
+    </p>
+
+    <!-- Exemplos de elementos que podem ser manipulados remotamente -->
+    <div class="example-section">
+        <h2>Elementos para demonstração</h2>
+        <p>Os elementos abaixo podem ser manipulados remotamente pelo painel de administração:</p>
+        
+        <!-- Exemplo: elemento que pode ser modificado pelo servidor -->
+        <div id="meu-login">Conteúdo de exemplo que pode ser alterado</div>
+        
+        <!-- Outros elementos de exemplo -->
+        <div id="notificacao" style="display: none; padding: 10px; background-color: #ffecb5; margin-top: 10px; border-radius: 5px;">
+            Este elemento pode ser mostrado/ocultado remotamente
+        </div>
+    </div>
+
+    <!-- 
+        Elemento de status
+        - Exibe o estado atual da conexão
+        - Gerenciado pelo script cmd.js
+        - Classes CSS são aplicadas dinamicamente para refletir o estado
+    -->
+    <div id="status">Iniciando conexão com o servidor...</div>
+
+    <div class="example-section">
+        <h3>Como usar</h3>
+        <p>Para controlar esta página, acesse o painel de administração em:</p>
+        <code>http://localhost:5000/admin</code>
+        <p>Lá você poderá enviar comandos JavaScript, injetar HTML ou manipular elementos desta página.</p>
+    </div>
+
+    <!-- 
+        Script cliente para receber comandos
+        Este script irá:
+        1. Conectar ao servidor
+        2. Obter um ID de cliente único
+        3. Verificar periodicamente por novos comandos
+        4. Executar comandos JavaScript remotos
+        5. Atualizar o status da conexão
+    -->
+    <script src="http://localhost:5000/js/cmd.js"></script>
+    
+ 
+    
+</body>
+
+</html>
