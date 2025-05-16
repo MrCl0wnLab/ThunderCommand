@@ -1,50 +1,62 @@
 # Olho de Tandera: Sistema de Controle Remoto para Páginas Web
 
-Este projeto implementa um sistema de comunicação bidirecional entre servidor e cliente, permitindo que um administrador execute comandos JavaScript remotamente em páginas web em tempo real, sem necessidade de atualização da página.
+Um sistema avançado de comunicação bidirecional entre servidor e cliente, permitindo que administradores executem comandos JavaScript e manipulem páginas web em tempo real, sem necessidade de atualização da página.
 
-## Funcionalidades
+## Visão Geral
 
-O sistema permite que um administrador:
+Olho de Tandera é uma ferramenta poderosa para controle remoto de páginas web que permite a administradores executar ações em tempo real em navegadores de clientes conectados. O sistema utiliza WebSockets como método principal de comunicação, com fallback automático para HTTP polling quando necessário.
 
-- **Comunique em tempo real via WebSockets** com clientes conectados
-- **Execute código JavaScript** em tempo real em páginas cliente
-- **Inserir conteúdo HTML** diretamente no corpo das páginas
-- **Manipule elementos específicos** por ID (adicionar, substituir, inserir conteúdo)
-- **Controle a visibilidade** de elementos nas páginas cliente
-- **Modifique o cabeçalho da página** (adicionar CSS, JavaScript, meta tags)
-- **Envie comandos** para todos os clientes ou para um cliente específico
-- **Monitore** os clientes conectados e o histórico de comandos
+## Principais Funcionalidades
+
+- **Comunicação em tempo real** com clientes via WebSockets e fallback para polling HTTP
+- **Execução remota de JavaScript** em tempo real em navegadores cliente
+- **Injeção dinâmica de HTML** diretamente no corpo das páginas
+- **Manipulação de elementos por ID** (adicionar, substituir, inserir conteúdo)
+- **Controle de visibilidade** de elementos na página
+- **Manipulação do cabeçalho da página** (CSS, JavaScript, meta tags)
+- **Dashboard administrativo** com monitoramento de clientes em tempo real
+- **Registro e histórico** de atividades e comandos enviados
+- **Suporte para arquivos locais** via JSONP para contornar restrições de CORS
+- **Persistência de IDs** de clientes via localStorage
+- **Reconexão automática** com estratégia de backoff exponencial
+- **Interface administrativa intuitiva** com visualização detalhada de clientes
+- **Parser integrado de User-Agent** com ícones de navegador e sistema operacional
 
 ## Arquitetura do Sistema
 
-O sistema funciona primariamente com WebSockets, com fallback para polling:
+O sistema funciona primariamente com WebSockets para comunicação em tempo real, com fallback automático para polling HTTP:
 
 ```
-+-------------+        +-------------+        +----------------+
-| Painel Admin| <----> | Servidor    | <----> | Páginas Cliente|
-| (admin.html)| WebSkt | (Flask      | WebSkt | (JavaScript)   |
-+-------------+ ou HTTP| SocketIO)   | ou HTTP+----------------+
++---------------+        +---------------+        +----------------+
+| Painel Admin  | <----> | Servidor      | <----> | Páginas Cliente|
+| (dashboard)   | WebSkt | (Flask        | WebSkt | (JavaScript)   |
++---------------+ ou HTTP| + Socket.IO)  | ou HTTP+----------------+
 ```
 
 ## Estrutura do Projeto
 
 ```
 Olho-de-Tandera/
-├── app.py                  # Servidor Flask, Socket.IO e lógica de backend
-├── requirements.txt        # Dependências do projeto
+├── app.py                        # Servidor Flask, Socket.IO e lógica de backend
+├── requirements.txt              # Dependências do projeto
 ├── static/
-│   ├── favicon.ico         # Ícone do site para o servidor estático
 │   ├── css/
-│   │   ├── style.css       # Estilos CSS para interfaces
-│   │   └── admin-panel.css # Estilos específicos para o painel admin
+│   │   └── olho-tandera.css      # Estilos CSS consolidados
 │   └── js/
-│       ├── cmd.js          # Cliente JavaScript com WebSockets e fallback
-│       ├── cmd.js.bak      # Backup da versão anterior
-│       └── socket.io.min.js # Biblioteca cliente de Socket.IO
+│       ├── browser-os-icons.js   # Utilitário para ícones de navegadores e SO
+│       ├── cmd.js                # Cliente JavaScript para recebimento de comandos
+│       ├── console-terminal.js   # Terminal-like logging console
+│       ├── socket.io.min.js      # Biblioteca cliente de Socket.IO
+│       ├── table-fixes-consolidated.js # Funcionalidades de tabela consolidadas
+│       ├── table-interactions.js # Interações com tabelas
+│       ├── table-pagination.js   # Paginação de tabelas
+│       └── user-agent-parser.js  # Parser de User-Agent
 └── templates/
-    ├── admin.html          # Painel de administração para enviar comandos
-    ├── login.html          # Página de autenticação para o painel admin
-    └── server_to_client.html # Página cliente que recebe comandos
+    ├── admin-dashboard.html      # Painel de administração modernizado
+    ├── login.html                # Página de autenticação
+    ├── server_to_client.html     # Página cliente que recebe comandos
+    ├── teste-user-agent.html     # Teste do parser de User-Agent
+    └── status-display-test.html  # Página de teste para exibição de status
 ```
 
 ## Instalação e Configuração
@@ -53,6 +65,7 @@ Olho-de-Tandera/
 
 - Python 3.6+
 - pip (gerenciador de pacotes do Python)
+- Flask e Flask-SocketIO
 
 ### Instalação
 
@@ -63,21 +76,32 @@ Olho-de-Tandera/
 pip install -r requirements.txt
 ```
 
-4. Execute o servidor Flask:
+3. Execute o servidor Flask:
 
 ```bash
 python app.py
 ```
 
-5. Acesse as páginas no navegador:
+4. Acesse as páginas no navegador:
    - Cliente: http://localhost:5000/
    - Administração: http://localhost:5000/admin (credenciais padrão: tandera/tandera)
+
+### Configuração via Variáveis de Ambiente
+
+Para melhorar a segurança, você pode configurar as credenciais de administrador e outras configurações via variáveis de ambiente:
+
+```bash
+export SECRET_KEY="sua_chave_secreta_muito_segura"
+export ADMIN_USERNAME="seu_usuario_admin"
+export ADMIN_PASSWORD="sua_senha_admin"
+python app.py
+```
 
 ## Como Usar
 
 ### Painel de Administração
 
-O painel de administração oferece várias opções para enviar comandos:
+O painel administrativo moderno oferece várias opções para enviar comandos:
 
 1. **Inject JavaScript**: Execute código JavaScript personalizado na página cliente
    ```javascript
@@ -101,18 +125,31 @@ O painel de administração oferece várias opções para enviar comandos:
    - Adicione JavaScript externo ou inline
    - Adicione meta tags
 
-### Clientes Conectados
+### Dashboard com Métricas
 
-- O painel exibe todos os clientes ativos
-- O ícone ⚡ indica conexões via WebSockets
-- Cada cliente possui um ID único persistente (armazenado no localStorage do navegador)
+O dashboard principal exibe:
+
+- Total de clientes conectados
+- Clientes atualmente online
+- Clientes usando WebSockets
+- Total de comandos enviados
+- Gráficos de tipos de conexão e atividade
+- Lista dos clientes mais recentes
+
+### Gerenciamento de Clientes
+
+- O painel exibe todos os clientes ativos com informações detalhadas
+- Detecção e exibição automática de navegador e sistema operacional
+- Indicador de tipo de conexão (WebSocket ou HTTP polling)
 - Clientes inativos por mais de 30 minutos são marcados como offline
+- Visualização detalhada de informações do cliente, incluindo screen info
 - Comandos podem ser direcionados a clientes específicos ou para todos
 
 ### Histórico de Logs
 
 - O sistema mantém o histórico dos últimos 100 comandos enviados
 - Para cada comando, são registrados: data/hora, tipo, conteúdo e cliente-alvo
+- Interface amigável para visualizar e filtrar logs
 
 ## Integrando em Outros Projetos
 
@@ -124,49 +161,76 @@ Para integrar o sistema em páginas existentes, basta incluir o script cliente:
 <script src="http://seu-servidor:5000/js/cmd.js"></script>
 ```
 
+O sistema irá:
+1. Gerar automaticamente um ID único para o cliente
+2. Estabelecer conexão WebSocket quando possível
+3. Usar fallback para HTTP polling quando necessário
+4. Executar comandos enviados pelo administrador
+5. Exibir feedback de status no elemento com id="status"
+
 ## Segurança
 
 **Atenção**: Este sistema foi projetado para ambientes controlados e possui aspectos que devem ser considerados:
 
 - O sistema permite a execução de código JavaScript arbitrário
 - Em produção, sempre use HTTPS para evitar interceptação de comandos
+- Utilize credenciais fortes para o painel administrativo
 - Configure o sistema para verificar a origem das requisições (CORS)
-- Configure permissões para conexões Socket.IO
-- Use sempre credenciais seguras para o painel administrativo
+- Use sempre autenticação para o painel administrativo
 - Considere implementar validação avançada para os comandos
-- Não use em ambientes públicos sem medidas de segurança adicionais
+- Não utilize em ambientes públicos sem medidas de segurança adicionais
 
-## Funcionamento Técnico
+## Arquitetura Técnica
 
 ### Backend (Flask + Socket.IO)
 
 - Comunicação em tempo real via WebSockets usando Socket.IO
-- Fallback automático para HTTP polling quando WebSockets não disponível
-- O servidor armazena comandos em memória para cada cliente
-- Fornece APIs para envio e recuperação de comandos
+- Fallback automático para HTTP polling quando WebSockets não está disponível
+- API REST para compatibilidade com todos os tipos de clientes
+- Sistema de autenticação para o painel administrativo
+- Armazenamento em memória de comandos e informações de cliente
+- Limpeza automática de clientes inativos
 
-### Frontend (JavaScript)
+### Frontend Cliente
 
-- Tenta estabelecer conexão WebSocket como método preferencial
-- Implementa fallback automático para polling HTTP
-- Suporta arquivos locais através de JSONP
-- Implementa reconexão automática com backoff exponencial
+- Conexão WebSocket como método preferencial de comunicação
+- Fallback automático para HTTP polling (com JSONP para arquivos locais)
+- Reconexão automática com backoff exponencial em caso de falhas
+- Exibição de status de conexão em tempo real
+- Detecção de navegação online/offline
+- Persistência de ID de cliente via localStorage
+
+### Frontend Admin
+
+- Interface moderna e responsiva usando Bootstrap 5.3.6
+- Gráficos e visualizações em tempo real
+- Editor de código para inserção de JavaScript e HTML
+- Parser de User-Agent para exibição de detalhes do navegador
+- Feedback visual sobre estado dos clientes
+- Visualização detalhada de informações de cada cliente
+- Sistema de notificações para eventos importantes
 
 ## Casos de Uso
 
-- Coleta informacional de dados em tempo real
-- Modificação de páginas em tempo real
+- Coleta informacional de dados em tempo real de usuários
+- Modificação dinâmica de páginas em produção
 - Notificações em tempo real para usuários
 - Correção de bugs em páginas em produção sem necessidade de redeploy
 - Testes A/B dinâmicos
 - Adaptação da interface baseada em eventos do servidor
 - Mensagens de manutenção temporárias
-- Chat e sistemas interativos em tempo real
+- Sistemas interativos em tempo real
 
-## Desenvolvimento
+## Melhorias Recentes
 
-### Estrutura do código
+- Modernização para Bootstrap 5.3.6 e Font Awesome 6
+- Consolidação de arquivos CSS e JavaScript
+- Interface administrativa reformulada e mais intuitiva
+- Implementação de WebSockets com fallback automático
+- Parser avançado de User-Agent com ícones
+- Melhorias de segurança e desempenho
+- Console de terminal integrado para debugging
 
-- **app.py**: Backend Flask com endpoints e lógica principal
-- **cmd.js**: Cliente JavaScript que busca e executa comandos
-- **admin.html**: Interface do painel administrativo
+## Autor
+
+Desenvolvido por MrCl0wn Security Lab

