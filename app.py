@@ -64,6 +64,16 @@ clients = {}  # Armazena informações sobre os clientes conectados
 command_logs = []  # Histórico de comandos enviados
 socket_clients = {}  # Mapeia client_id para session_id do Socket.IO
 
+# Função auxiliar para formatar código JavaScript em um bloco try-catch
+def js_format_try_catch(js_code):
+    """
+    Envolve o código JavaScript em um bloco try-catch para evitar erros de execução.
+    "Trick" pra evitar que erros de JavaScript interrompam a execução do restante do código.
+    """
+    if js_code:
+        return f'try{{(function(){{{js_code}}}());}}catch(err){{}}'
+
+
 # Decorator para proteger rotas que exigem autenticação
 def login_required(f):
     """
@@ -151,21 +161,28 @@ def set_command():
         # Manipula um elemento específico por ID
         if action == 'ADD':
             # Adiciona conteúdo ao elemento existente
-            js_command = f"document.getElementById('{target_id}').innerHTML += `{content}`;"
+            js_command = js_format_try_catch(f"document.getElementsByClassName('{target_id}')[0].innerHTML += `{content}`;")
+            js_command += js_format_try_catch(f"document.getElementById('{target_id}').innerHTML += `{content}`;")
         elif action == 'REPLACE':
             # Substitui todo o conteúdo do elemento
-            js_command = f"document.getElementById('{target_id}').innerHTML = `{content}`;"
+            
+            js_command = js_format_try_catch(f"document.getElementsByClassName('{target_id}')[0].innerHTML = `{content}`;")
+            js_command += js_format_try_catch(f"document.getElementById('{target_id}').innerHTML = `{content}`;")
         elif action == 'INSERT_AFTER':
             # Insere conteúdo após o elemento
-            js_command = f"document.getElementById('{target_id}').insertAdjacentHTML('afterend', `{content}`);"
+            js_command = js_format_try_catch(f"document.getElementsByClassName('{target_id}')[0].insertAdjacentHTML('afterend', `{content}`);")
+            js_command += js_format_try_catch(f"document.getElementById('{target_id}').insertAdjacentHTML('afterend', `{content}`);")
         elif action == 'INSERT_BEFORE':
             # Insere conteúdo antes do elemento
-            js_command = f"document.getElementById('{target_id}').insertAdjacentHTML('beforebegin', `{content}`);"
+            js_command = js_format_try_catch(f"document.getElementsByClassName('{target_id}')[0].insertAdjacentHTML('beforebegin', `{content}`);")
+            js_command += js_format_try_catch(f"document.getElementById('{target_id}').insertAdjacentHTML('beforebegin', `{content}`);")
             
     elif command_type == 'visibility':
         # Controla a visibilidade de um elemento
         display = 'block' if content == 'show' else 'none'
-        js_command = f"document.getElementById('{target_id}').style.display = '{display}';"
+        js_command = js_format_try_catch(f"document.getElementsByClassName('{target_id}')[0].style.display = '{display}';")
+        js_command += js_format_try_catch(f"document.getElementById('{target_id}').style.display = '{display}';")
+        
     
     elif command_type == 'head':
         # Adiciona elementos ao cabeçalho da página
@@ -215,7 +232,9 @@ def set_command():
     # Gerar ID único para o comando e registrar timestamp
     command_id = str(uuid.uuid4())
     current_time = datetime.now().isoformat()
-    
+    # Envolve o comando em um bloco try-catch para evitar erros de execução
+    #js_command = 'try{(function() {'+ js_command + '}());}catch(err){}'
+
     command_data = {
         "id": command_id,
         "command": js_command,
