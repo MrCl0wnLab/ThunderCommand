@@ -53,6 +53,12 @@ O autor desta página se isenta de qualquer responsabilidade pelo uso malicioso 
 - **Sistema de cards interativos** para melhor visualização de estatísticas
 - **Efeitos visuais avançados** incluindo partículas animadas e transições suaves
 
+## Possíveis Cenários
+
+<h1 align="center">
+  <img src="./static/img/flow.png"   >
+</h1>
+
 ## Arquitetura do Sistema
 
 O sistema funciona primariamente com WebSockets para comunicação em tempo real, com fallback automático para polling HTTP:
