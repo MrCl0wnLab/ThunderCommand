@@ -257,7 +257,7 @@ function refreshLogs() {
                     let typeIcon;
                     switch(log.type) {
                         case 'js': typeIcon = 'fa-code'; break;
-                        case 'html': typeIcon = 'fa-html5'; break;
+                        case 'html': typeIcon = 'fa-file-code'; break;
                         case 'manipulate': typeIcon = 'fa-edit'; break;
                         case 'visibility': typeIcon = 'fa-eye-slash'; break;
                         case 'head': typeIcon = 'fa-heading'; break;
