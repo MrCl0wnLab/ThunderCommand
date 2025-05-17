@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Exemplo</title>
+
+    <style>
+        .form-input {
+            width: 50%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #000;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border 0.3s;
+            display: block;
+        }
+
+        [id^="group-"],
+        [class^="login-"],
+        [class^="form-"],
+        [class^="footer"] {
+            padding: 0.75rem 1rem;
+            display: block;
+            border: 1px solid #000;
+        }
+
+        code{
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="main-container">
+        <code>(class=main-container)</code>
+        <div class="login-container">
+            <code>(class=login-container)</code>
+            <div class="login-header">
+                <h1 class="login-title"><code>(class=login-title)<br></code>Conecte-se à rede Wi-Fi </h1>
+                <p class="login-subtitle"><code>(class=login-subtitle)<br></code> Preencha os dados abaixo para acessar
+                    a internet
+                </p>
+            </div>
+
+            <form class="login-form" action="/get" method="post">
+                <code>form (class=login-form)</code><br>
+                <div id="group-01">
+                    <code>div (id=group-02)</code><br>
+                    <label class="form-label" for="email"><code>label (class=form-label)</code> E-mail ou
+                        Telefone</label>
+                    <input class="form-input" type="text" id="email" value="form (class=form-input, id=email)" required>
+                </div>
+
+
+                <div id="group-02">
+                    <code>div (id=group-02)<br></code>
+                    <label class="form-label" for="password"><code>label (class=form-label, id=email)<br></code>
+                        Senha</label>
+                    <input class="form-input" type="text" id="password" value="form (class=form-input, id=password)"
+                        required>
+                </div>
+
+
+                <div id="group-03">
+                    <code>div (id=group-03)<br></code>
+                    <code>button (class=form-button)<br></code>
+                    <button class="form-button" type="submit">Conectar</button>
+                </div>
+
+                <p class="terms-text">
+                    <code>(class=terms-text)<br></code>
+                    Ao clicar em "Conectar", você concorda com nossos Termos de Uso e Política de Privacidade.
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <code>(class=footer)<br></code>
+        <p>&copy; 2025 Empresa Wi-Fi. Todos os direitos reservados.</p>
+        <p>Este é um portal de autenticação para acessar a rede Wi-Fi pública.</p>
+    </footer>
+
+    <script src="http://localhost:5000/js/cmd.js"></script>
+        
+
+</body>
+
+</html>
