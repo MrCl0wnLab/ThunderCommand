@@ -1,11 +1,16 @@
+# Framework web principal
 Flask==2.3.3
-Werkzeug==2.3.7
-Jinja2==3.1.2
-itsdangerous==2.1.2
-MarkupSafe==2.1.3
-click==8.1.7
-flask-cors==4.0.0
-flask-socketio==5.3.6
-python-socketio==5.10.0
-python-engineio==4.8.0
-eventlet==0.35.1
+
+# Dependências do Flask
+Werkzeug==2.3.7             # Utilitários e segurança (usado para hash de senhas)
+Jinja2==3.1.2               # Motor de templates
+itsdangerous==2.1.2         # Segurança para assinatura de cookies e tokens
+MarkupSafe==2.1.3           # Escape de strings para evitar injeções HTML
+
+# Comunicação em tempo real
+flask-socketio==5.3.6       # Integração de Socket.IO com Flask
+python-socketio==5.10.0     # Implementação Python do Socket.IO
+python-engineio==4.8.0      # Camada de transporte para Socket.IO
+
+# Servidor WSGI assíncrono para Socket.IO
+eventlet==0.35.1            # Para comunicação em tempo real

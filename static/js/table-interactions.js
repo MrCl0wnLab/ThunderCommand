@@ -1,5 +1,5 @@
 /**
- * Funcionalidades interativas para tabelas no painel Olho de Tandera
+ * Funcionalidades interativas para tabelas no painel Thunder Command
  * Implementa:
  * - Seleção de linhas com destaque visual usando o tema neon
  * - Ordenação interativa das colunas

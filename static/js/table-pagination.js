@@ -1,5 +1,5 @@
 /**
- * Sistema de paginação para tabelas grandes no Olho de Tandera
+ * Sistema de paginação para tabelas grandes no Thunder Command
  * 
  * Este script implementa:
  * - Paginação automática baseada em quantidade de linhas

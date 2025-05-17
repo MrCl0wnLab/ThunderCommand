@@ -3,10 +3,11 @@ import time
 from flask import Flask, Response, jsonify, request, render_template, send_from_directory, session, redirect, url_for
 from werkzeug.exceptions import HTTPException
 from werkzeug.security import generate_password_hash, check_password_hash
-import uuid
 from datetime import datetime, timedelta
-import os
 from functools import wraps
+import os
+import uuid
+import mimetypes
 
 # Importação condicional para Socket.IO
 try:
@@ -17,7 +18,7 @@ except ImportError:
     print("WARNING: flask-socketio not available. Falling back to traditional HTTP polling.")
 
 """
-Olho de Tandera: Sistema de Controle Remoto para Páginas Web
+Thunder Command: Sistema de Controle Remoto para Páginas Web
 =============================================================
 
 Este aplicativo permite o envio de comandos JavaScript em tempo real para páginas web clientes.
@@ -30,7 +31,6 @@ Versão: 1.0 (Atualizado com WebSockets)
 """
 
 # Configuração para compatibilidade Windows com MIME types
-import mimetypes
 mimetypes.add_type('application/javascript', '.js')
 
 # Inicialização e configuração do aplicativo Flask
@@ -580,6 +580,11 @@ if socketio_available:
 def teste_user_agent():
     """Página para testes do parser de User-Agent"""
     return render_template('teste-user-agent.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    """Rota para o favicon.ico"""
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 if __name__ == '__main__':
     if socketio_available:

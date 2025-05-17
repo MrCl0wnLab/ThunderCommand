@@ -4,66 +4,487 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Página cliente para demonstração do Sistema de Recebimendo de Comandos">
-    <title>Página de Teste - Olho de Tandera</title>
+    <meta name="description" content="Página cliente para demonstração do Sistema de Recebimento de Comandos">
+    <title>Cliente Remoto - Thunder Command</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
     
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     
     <!-- Bootstrap 5.3.6 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
     
     <!-- CSS customizado consolidado -->
     <link rel="stylesheet" href="/static/css/olho-tandera.css">
+    <!-- Tema Dark Red customizado -->
+    <link rel="stylesheet" href="/static/css/custom-dark-red.css">
     
     <!-- Bootstrap JS Bundle com Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
-    
-    <!-- Popper.js e Bootstrap JS separados -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.min.js" integrity="sha384-RuyvpeZCxMJCqVUGFI0Do1mQrods/hhxYlcVfGPOfQtPJh0JCw12tUAZ/Mv10S7D" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --main-bg-color: var(--bs-darkest);
+            --secondary-bg-color: var(--bs-very-dark-brown);
+            --accent-color: var(--bs-bright-red);
+            --accent-hover: var(--bs-red);
+            --text-color: var(--bs-light-accent);
+            --border-color: var(--bs-border-dark);
+            --card-bg: var(--bs-very-dark-brown);
+        }
+        
+        body {
+            background-color: var(--main-bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* Header */
+        .site-header {
+            background-color: rgba(2, 1, 4, 0.95);
+            backdrop-filter: blur(5px);
+            border-bottom: 1px solid var(--bs-border-dark);
+            padding: 1.5rem 0;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+        }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        .site-brand {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--bs-dark-red) 0%, var(--bs-red) 100%);
+            border-radius: 50%;
+            margin-right: 15px;
+            box-shadow: 0 0 15px rgba(157, 8, 17, 0.5);
+            animation: pulse 3s infinite;
+        }
+        
+        .logo-icon {
+            color: var(--bs-darkest);
+            font-size: 24px;
+            animation: blink 4s infinite;
+
+        }
+        
+        .site-title {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(251, 65, 55, 0.3);
+        }
+        
+        .site-subtitle {
+            color: var(--bs-muted-text);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            background: rgba(32, 14, 21, 0.5);
+            border: 1px solid var(--bs-border-dark);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: #6c757d;
+        }
+        
+        .status-connected .status-indicator {
+            background-color: var(--bs-success);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(70, 115, 85, 0.7);
+        }
+        
+        .status-error .status-indicator {
+            background-color: var(--bs-bright-red);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(251, 65, 55, 0.7);
+        }
+        
+        /* Main content */
+        .main-container {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .page-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .page-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background-color: var(--accent-color);
+            border-radius: 2px;
+        }
+        
+        .page-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 3rem;
+            color: var(--bs-muted-text);
+            max-width: 800px;
+        }
+        
+        /* Cards */
+        .card-section {
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background-color: var(--bs-very-dark-brown);
+            border: 1px solid var(--bs-border-dark);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            box-shadow: var(--card-shadow);
+            color: white;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card-header {
+            background-color: rgba(85, 34, 36, 0.3);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--bs-border-dark);
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        
+        .card-icon {
+            margin-right: 10px;
+            color: var(--accent-color);
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        /* Demo elements */
+        .demo-element {
+            padding: 1.5rem;
+            background-color: rgba(32, 14, 21, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--bs-border-dark);
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .demo-element-title {
+            font-size: 1rem;
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+            font-family: 'Roboto Mono', monospace;
+            font-weight: 500;
+        }
+        
+        .demo-element-content {
+            color: var(--text-color);
+        }
+        
+        /* Info blocks */
+        .info-block {
+            background-color: rgba(85, 34, 36, 0.2);
+            border-left: 4px solid var(--bs-dark-red);
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 1.5rem;
+            color: var(--text-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .admin-url {
+            background-color: var(--bs-darkest);
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-family: 'Roboto Mono', monospace;
+            border: 1px solid var(--bs-dark-brown);
+            display: inline-block;
+            margin: 0.5rem 0;
+            color: var(--accent-color);
+            box-shadow: 0 0 10px rgba(157, 8, 17, 0.15);
+        }
+        
+        /* Footer */
+        .site-footer {
+            background-color: rgba(2, 1, 4, 0.95);
+            backdrop-filter: blur(5px);
+            border-top: 1px solid var(--bs-border-dark);
+            padding: 1.5rem 0;
+            margin-top: auto;
+            box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        .footer-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer-info {
+            color: var(--bs-muted-text);
+            font-size: 0.9rem;
+        }
+        
+        .footer-links a {
+            color: var(--bs-light-accent);
+            text-decoration: none;
+            margin-left: 1rem;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--accent-color);
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(221, 12, 18, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(221, 12, 18, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(221, 12, 18, 0);
+            }
+        }
+        
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 0.7;
+            }
+            96% {
+                opacity: 0.2;
+            }
+            97% {
+                opacity: 0.7;
+            }
+        }
+        
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            background-color: rgba(251, 65, 55, 0.05);
+            border-radius: 50%;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .header-container, .footer-container {
+                flex-direction: column;
+                text-align: center;
+                padding: 1rem;
+            }
+            
+            .site-brand {
+                margin-bottom: 1rem;
+            }
+            
+            .connection-status {
+                margin-top: 1rem;
+            }
+            
+            .footer-links {
+                margin-top: 1rem;
+            }
+            
+            .footer-links a {
+                margin: 0 0.5rem;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <!-- Cabeçalho da página -->
-    <h1>Página Cliente - Recebendo Olhar de Tandera</h1>
-    <!-- Descrição do funcionamento -->
-    <p>
-        Esta página demonstra o funcionamento do Sistema de Recebimendo de Comandos remotos.
-        O servidor pode enviar comandos JavaScript que serão executados nesta página em tempo real,
-        sem necessidade de atualização.
-    </p>
+    <!-- Partículas de fundo -->
+    <div class="particles" id="particles"></div>
 
-    <!-- Exemplos de elementos que podem ser manipulados remotamente -->
-    <div class="example-section">
-        <h2>Elementos para demonstração</h2>
-        <p>Os elementos abaixo podem ser manipulados remotamente pelo painel de administração:</p>
-        
-        <!-- Exemplo: elemento que pode ser modificado pelo servidor -->
-        <div id="meu-login">Conteúdo de exemplo que pode ser alterado</div>
-        
-        <!-- Outros elementos de exemplo -->
-        <div id="notificacao">
-            Este elemento pode ser mostrado/ocultado remotamente
+    <!-- Cabeçalho com logo -->
+    <header class="site-header">
+        <div class="header-container">
+            <div class="site-brand">
+                <div class="logo-container">
+                    <img src="/static/img/logo.png" alt="Logo Thunder Command" width="150" height="150">
+                </div>
+                <div>
+                    <h1 class="site-title">Thunder COMMAND</h1>
+                    <p class="site-subtitle">  olho@tandera:~$ Cliente Remoto</p>
+                </div>
+            </div>
+            
+            <!-- Indicador de status da conexão -->
+            <div class="connection-status" id="connection-status">
+                <div class="status-indicator"></div>
+                <span id="status">Iniciando conexão...</span>
+            </div>
         </div>
-    </div>
+    </header>
 
-    <!-- 
-        Elemento de status
-        - Exibe o estado atual da conexão
-        - Gerenciado pelo script cmd.js
-        - Classes CSS são aplicadas dinamicamente para refletir o estado
-    -->
-    <div id="status">Iniciando conexão com o servidor...</div>
+    <!-- Conteúdo principal -->
+    <main class="main-container">
+        <h2 class="page-title">Centro de Controle Remoto</h2>
+        <p class="page-description">
+            Esta página demonstra o funcionamento do Sistema de Recebimento de Comandos Remotos.
+            O servidor pode enviar comandos JavaScript que serão executados nesta página em 
+            tempo real, sem necessidade de atualização.
+        </p>
 
-    <div class="example-section">
-        <h3>Como usar</h3>
-        <p>Para controlar esta página, acesse o painel de administração em:</p>
-        <code>http://localhost:5000/admin</code>
-        <p>Lá você poderá enviar comandos JavaScript, injetar HTML ou manipular elementos desta página.</p>
-    </div>
+        <!-- Grid de cards para os elementos de demonstração -->
+        <div class="row card-section">
+            <!-- Card de elementos manipuláveis -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-cube card-icon"></i>
+                        <h3 class="card-title">Elementos para Demonstração</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>Os elementos abaixo podem ser manipulados remotamente pelo painel de administração:</p>
+                        
+                        <!-- Elemento manipulável 1 -->
+                        <div class="demo-element">
+                            <div class="demo-element-title">#meu-login</div>
+                            <div class="demo-element-content" id="meu-login">
+                                Conteúdo de exemplo que pode ser alterado
+                            </div>
+                        </div>
+                        
+                        <!-- Elemento manipulável 2 -->
+                        <div class="demo-element">
+                            <div class="demo-element-title">#notificacao</div>
+                            <div class="demo-element-content" id="notificacao">
+                                Este elemento pode ser mostrado/ocultado remotamente
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card de instruções -->
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle card-icon"></i>
+                        <h3 class="card-title">Como Usar</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-block">
+                            <p>Para controlar esta página e seus elementos, acesse o painel de administração em:</p>
+                            <div class="admin-url">http://localhost:5000/admin</div>
+                            <p>No painel administrativo, você poderá:</p>
+                            <ul>
+                                <li>Executar código JavaScript personalizado</li>
+                                <li>Injetar conteúdo HTML diretamente</li>
+                                <li>Manipular elementos específicos por ID</li>
+                                <li>Controlar visibilidade de componentes</li>
+                                <li>Adicionar conteúdo ao cabeçalho da página</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-info">
+                <span>&copy; 2025 Thunder Command | MrCl0wn Security Lab - https://blog.mrcl0wn.com/</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/MrCl0wnLab/Olho-de-Tandera"><i class="fas fa-code"></i> Documentação</a>
+            </div>
+        </div>
+    </footer>
 
     <!-- 
         Scripts cliente para receber comandos
@@ -75,6 +496,85 @@
     -->
     <script src="http://localhost:5000/js/cmd.js"></script>
     
+    <!-- Script para efeitos visuais -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Criar partículas de fundo
+            const particles = document.getElementById('particles');
+            const numParticles = 30;
+            
+            if (particles) {
+                for (let i = 0; i < numParticles; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    
+                    // Tamanho aleatório
+                    const size = Math.random() * 15 + 5;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    
+                    // Posição aleatória
+                    const x = Math.random() * 100;
+                    const y = Math.random() * 100;
+                    particle.style.left = `${x}%`;
+                    particle.style.top = `${y}%`;
+                    
+                    // Opacidade aleatória
+                    const opacity = Math.random() * 0.2 + 0.05;
+                    particle.style.opacity = opacity;
+                    
+                    // Animação
+                    const duration = Math.random() * 50 + 30;
+                    const delay = Math.random() * 10;
+                    
+                    particle.style.animation = `float ${duration}s ${delay}s infinite linear alternate`;
+                    
+                    // Adicionar ao container
+                    particles.appendChild(particle);
+                }
+            }
+            
+            // Monitorar status de conexão para atualizar a UI
+            const originalStatus = window.updateStatus;
+            const statusElement = document.getElementById('status');
+            const statusContainer = document.getElementById('connection-status');
+            
+            if (window.updateStatus && statusElement && statusContainer) {
+                window.updateStatus = function(message, type) {
+                    // Chamar a função original
+                    if (originalStatus) {
+                        originalStatus(message, type);
+                    }
+                    
+                    // Atualizar a UI
+                    statusElement.textContent = message;
+                    
+                    // Remover classes anteriores
+                    statusContainer.classList.remove('status-connected', 'status-error');
+                    
+                    // Adicionar classe com base no tipo
+                    if (type === 'success' || type === 'connected') {
+                        statusContainer.classList.add('status-connected');
+                    } else if (type === 'error' || type === 'disconnected') {
+                        statusContainer.classList.add('status-error');
+                    }
+                };
+            }
+            
+            // Adicionar animação de flutuação às partículas
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes float {
+                    0% { transform: translate(0, 0); }
+                    25% { transform: translate(20px, -20px); }
+                    50% { transform: translate(-20px, 20px); }
+                    75% { transform: translate(-30px, -10px); }
+                    100% { transform: translate(15px, 30px); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+    
 </body>
-
 </html>

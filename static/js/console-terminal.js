@@ -1,5 +1,5 @@
 /**
- * Olho de Tandera - Console Terminal
+ * Thunder Command - Console Terminal
  * Script para gerenciar o terminal de logs no estilo de console Linux
  */
 

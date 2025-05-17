@@ -1,10 +1,44 @@
-# Olho de Tandera: Sistema de Controle Remoto para Páginas Web
+
+
+
+
+
+
+<h1 align="center" style="color:red">
+  <img src="./static/img/logo_banner_letras.png"   width="500">
+  <br>
+</h1>
+
+<p align="center" style="font-size:12px">Referência ThunderCats: O Olho de Thundera é um item de poder, que concede visão além do mundo físico (Visão Além da Visão), permitindo que Lion-O amplia sua visão e revela perigos ocultos a grandes distâncias. <br><br></p>
+
+
+
+# Thunder Command
 
 Um sistema avançado de comunicação bidirecional entre servidor e cliente, permitindo que administradores executem comandos JavaScript e manipulem páginas web em tempo real, sem necessidade de atualização da página.
 
 ## Visão Geral
 
-Olho de Tandera é uma ferramenta poderosa para controle remoto de páginas web que permite a administradores executar ações em tempo real em navegadores de clientes conectados. O sistema utiliza WebSockets como método principal de comunicação, com fallback automático para HTTP polling quando necessário.
+Thunder Command é uma ferramenta poderosa para controle remoto de páginas web que permite a administradores executar ações em tempo real em navegadores de clientes conectados. O sistema utiliza WebSockets como método principal de comunicação, com fallback automático para HTTP polling quando necessário.
+
+
+## AVISO
+
+#### Isenção de Responsabilidade: Uso Educacional e Estrutura Legal
+As páginas de coleta fornecidas aqui são estritamente destinadas a fins educacionais e de treinamento. O objetivo é aumentar a conscientização sobre ameaças de segurança e ensinar os usuários a se proteger contra ataques de coleta.
+Ao acessar essas páginas, você concorda em usá-las apenas dentro de uma estrutura legal e ética, em conformidade com as leis  e regulamentos aplicáveis em sua jurisdição.
+
+#### Contexto de Estudos Técnicos
+As páginas de coleta fornecidas neste repositório têm como objetivo apoiar profissionais de segurança em seus estudos e aprimoramento do cenário de cibersegurança, tudo dentro do contexto de construção de  um ambiente de simulação de ataque e defesa.
+
+#### Limitação de Responsabilidade
+O autor desta página se isenta de qualquer responsabilidade pelo uso malicioso ou ilegal dessas páginas de coleta. Qualquer pessoa que use essas páginas para fins não conformes à lei será a única responsável por suas ações. É altamente recomendável nunca usar essas técnicas para qualquer finalidade que não seja aprendizado e conscientização. O autor não monitora o uso dessas páginas após o download e transfere toda a responsabilidade ao usuário após o download.
+
+---
+
+<h1 align="center">
+  <img src="./static/img/logo.png"   width="200">
+</h1>
 
 ## Principais Funcionalidades
 
@@ -21,6 +55,9 @@ Olho de Tandera é uma ferramenta poderosa para controle remoto de páginas web 
 - **Reconexão automática** com estratégia de backoff exponencial
 - **Interface administrativa intuitiva** com visualização detalhada de clientes
 - **Parser integrado de User-Agent** com ícones de navegador e sistema operacional
+- **Design moderno e responsivo** com interface futurística e animações
+- **Sistema de cards interativos** para melhor visualização de estatísticas
+- **Efeitos visuais avançados** incluindo partículas animadas e transições suaves
 
 ## Arquitetura do Sistema
 
@@ -63,7 +100,7 @@ Olho-de-Tandera/
 
 ### Pré-requisitos
 
-- Python 3.6+
+- Python 3.13
 - pip (gerenciador de pacotes do Python)
 - Flask e Flask-SocketIO
 
@@ -83,19 +120,27 @@ python app.py
 ```
 
 4. Acesse as páginas no navegador:
-   - Cliente: http://localhost:5000/
-   - Administração: http://localhost:5000/admin (credenciais padrão: tandera/tandera)
+   - Cliente: `http://localhost:5000/`
+   - Administração: `http://localhost:5000/admin` (credenciais padrão: `tandera`/`tandera`)
 
 ### Configuração via Variáveis de Ambiente
 
 Para melhorar a segurança, você pode configurar as credenciais de administrador e outras configurações via variáveis de ambiente:
 
 ```bash
-export SECRET_KEY="sua_chave_secreta_muito_segura"
+export SECRET_KEY="sua_key"
 export ADMIN_USERNAME="seu_usuario_admin"
 export ADMIN_PASSWORD="sua_senha_admin"
 python app.py
 ```
+### SCREENSHOTS
+
+<img src="./static/img/login.png"> 
+
+<img src="./static/img/cliente.png">
+
+<img src="./static/img/admin.png">
+
 
 ## Como Usar
 
@@ -125,17 +170,6 @@ O painel administrativo moderno oferece várias opções para enviar comandos:
    - Adicione JavaScript externo ou inline
    - Adicione meta tags
 
-### Dashboard com Métricas
-
-O dashboard principal exibe:
-
-- Total de clientes conectados
-- Clientes atualmente online
-- Clientes usando WebSockets
-- Total de comandos enviados
-- Gráficos de tipos de conexão e atividade
-- Lista dos clientes mais recentes
-
 ### Gerenciamento de Clientes
 
 - O painel exibe todos os clientes ativos com informações detalhadas
@@ -149,15 +183,16 @@ O dashboard principal exibe:
 
 - O sistema mantém o histórico dos últimos 100 comandos enviados
 - Para cada comando, são registrados: data/hora, tipo, conteúdo e cliente-alvo
-- Interface amigável para visualizar e filtrar logs
+- Interface amigável para visualizar logs
 
 ## Integrando em Outros Projetos
 
 Para integrar o sistema em páginas existentes, basta incluir o script cliente:
 
+**A instância do cmd.js garante a execução em uma página remota hospedada em outro servidor ou no cliente que baixa o arquivo .html em sua máquina.**
+
 ```html
 <!-- Adicionar antes do fechamento do </body> -->
-<div id="status"></div>
 <script src="http://seu-servidor:5000/js/cmd.js"></script>
 ```
 
@@ -173,11 +208,7 @@ O sistema irá:
 **Atenção**: Este sistema foi projetado para ambientes controlados e possui aspectos que devem ser considerados:
 
 - O sistema permite a execução de código JavaScript arbitrário
-- Em produção, sempre use HTTPS para evitar interceptação de comandos
-- Utilize credenciais fortes para o painel administrativo
-- Configure o sistema para verificar a origem das requisições (CORS)
 - Use sempre autenticação para o painel administrativo
-- Considere implementar validação avançada para os comandos
 - Não utilize em ambientes públicos sem medidas de segurança adicionais
 
 ## Arquitetura Técnica
@@ -186,21 +217,21 @@ O sistema irá:
 
 - Comunicação em tempo real via WebSockets usando Socket.IO
 - Fallback automático para HTTP polling quando WebSockets não está disponível
-- API REST para compatibilidade com todos os tipos de clientes
+- API REST em Flask
 - Sistema de autenticação para o painel administrativo
 - Armazenamento em memória de comandos e informações de cliente
 - Limpeza automática de clientes inativos
 
-### Frontend Cliente
+### Cliente
 
 - Conexão WebSocket como método preferencial de comunicação
-- Fallback automático para HTTP polling (com JSONP para arquivos locais)
+- Fallback automático para HTTP polling (com JSONP **para arquivos locais**)
 - Reconexão automática com backoff exponencial em caso de falhas
 - Exibição de status de conexão em tempo real
 - Detecção de navegação online/offline
 - Persistência de ID de cliente via localStorage
 
-### Frontend Admin
+### Admin
 
 - Interface moderna e responsiva usando Bootstrap 5.3.6
 - Gráficos e visualizações em tempo real
@@ -213,6 +244,9 @@ O sistema irá:
 ## Casos de Uso
 
 - Coleta informacional de dados em tempo real de usuários
+- Operação de Redteam
+- Contexto Educacional
+- Incrementar paginas de portal captive [Evil Portal](https://github.com/MrCl0wnLab/BR-EvilPortal-HTML-Files)
 - Modificação dinâmica de páginas em produção
 - Notificações em tempo real para usuários
 - Correção de bugs em páginas em produção sem necessidade de redeploy
@@ -221,16 +255,24 @@ O sistema irá:
 - Mensagens de manutenção temporárias
 - Sistemas interativos em tempo real
 
-## Melhorias Recentes
 
-- Modernização para Bootstrap 5.3.6 e Font Awesome 6
-- Consolidação de arquivos CSS e JavaScript
-- Interface administrativa reformulada e mais intuitiva
-- Implementação de WebSockets com fallback automático
-- Parser avançado de User-Agent com ícones
-- Melhorias de segurança e desempenho
-- Console de terminal integrado para debugging
 
-## Autor
+<h1 align="center" style="color:red">
+  <img src="./static/img/logo_banner.png"   width="200">
+  <br>
+</h1>
 
-Desenvolvido por MrCl0wn Security Lab
+
+## Desenvolvido por 🛠️ <a name="autores"></a>
+
+- **Cleiton P. (MrCl0wn Security Lab)** - [Twitter](https://twitter.com/MrCl0wnLab), [Git](https://github.com/MrCl0wnLab), [Blog](https://blog.mrcl0wn.com/)
+
+
+---
+
+## Contribuições ✨ <a name="contribuicoes"></a>
+Contribuições de qualquer tipo são bem-vindas!
+
+<a href="https://github.com/MrCl0wnLab/ThunderCommand/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=MrCl0wnLab/ThunderCommand&max=500" alt="Lista de contribuidores" width="10%"/>
+</a>
