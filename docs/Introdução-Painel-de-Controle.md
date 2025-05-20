@@ -13,7 +13,7 @@ O Thunder Command permite controlar remotamente páginas web em tempo real, exec
 Para transformar qualquer página em um cliente:
 
 ```html
-<script src="http://seu-servidor:5000/js/cmd.js"></script>
+<script src="http://seu-servidor:5000/1/cmd.js"></script>
 ```
 
 ## Exemplos Disponíveis
