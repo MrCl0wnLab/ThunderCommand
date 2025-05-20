@@ -1,0 +1,30 @@
+<!-- Clients Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Clientes Conectados</span>
+        <a href="#clients" class="btn btn-outline-danger btn-sm" data-page="clients" onclick="refreshClientsTables(); return false;">
+            Ver todos <i class="fas fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sortable table-dark" id="dashboard-clients-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>ID do Cliente</th>
+                        <th>Última Atividade</th>
+                        <th>IP</th>
+                        <th>Browser</th>
+                        <th>OS</th>
+                        <th>Conexão</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Preenchido dinamicamente via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

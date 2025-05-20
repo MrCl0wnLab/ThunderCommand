@@ -1,0 +1,89 @@
+<!-- Stats Row -->
+<div class="row">
+    <!-- Total Clientes -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card">
+            <div class="stats-card">
+                <div class="stats-icon primary">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="total-clients">0</h3>
+                    <span>Total de Clientes</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Clientes Online -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card">
+            <div class="stats-card">
+                <div class="stats-icon success">
+                    <i class="fas fa-plug"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="online-clients">0</h3>
+                    <span>Clientes Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Clientes WebSocket -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card">
+            <div class="stats-card">
+                <div class="stats-icon warning">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="websocket-clients">0</h3>
+                    <span>Clientes WebSocket</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Comandos Enviados -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card">
+            <div class="stats-card">
+                <div class="stats-icon danger">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <div class="stats-info">
+                    <h3 id="total-commands">0</h3>
+                    <span>Comandos Enviados</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row">
+    <!-- Connection Types Chart -->
+    <div class="col-xl-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Tipos de Conexão
+            </div>
+            <div class="card-body chart-container">
+                <canvas id="connectionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Client Activity Chart -->
+    <div class="col-xl-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                Atividade de Clientes (últimas 24h)
+            </div>
+            <div class="card-body chart-container">
+                <canvas id="activityChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>

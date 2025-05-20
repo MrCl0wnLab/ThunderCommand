@@ -1,0 +1,36 @@
+<!-- Logs Console -->
+<div class="console-container">
+    <div class="console-header">
+        <h2 class="console-title"><i class="fas fa-history"></i> Histórico de Comandos</h2>
+        <div>
+            <button class="console-button theme-dark-red" onclick="toggleFullscreen()" title="Tela cheia">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Console Content -->
+    <div class="console-body">
+        <div id="logs-list">
+            <p class="text-center p-4 logs-loading">
+                <i class="fas fa-circle-notch fa-spin me-2"></i> Carregando logs...
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Clientes Alvo -->
+<div class="card mt-4 console-target-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-users me-2"></i> Cliente Alvo para Execução de Comandos</span>
+        <div>
+            <select id="console-target-client" class="form-select form-select-sm d-inline-block me-2 console-select" style="width: 250px;">
+                <option value="default">Todos os clientes</option>
+                <!-- Opções carregadas dinamicamente -->
+            </select>
+            <button class="console-button theme-dark-red" onclick="refreshClientsForConsole()" title="Atualizar lista de clientes">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+</div>
