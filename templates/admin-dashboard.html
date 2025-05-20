@@ -238,6 +238,11 @@
             </div>
         </div>
 
+        <!-- Clients Section (placeholder to fix missing element error) -->
+        <div class="content-page" id="clients-page" style="display:none;">
+            <!-- Conteúdo da página de clientes será adicionado aqui -->
+        </div>
+
         <!-- Commands Section -->
         <div class="content-page" id="commands-page">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -557,6 +562,8 @@
                 </div>
             </div>
         </div>
+        
+   
     </div>
 
     <!-- jQuery -->
@@ -576,6 +583,13 @@
     <!-- Parser de User-Agent -->
     
     <script>
+        // Helper function to escape HTML - prevents XSS in preview
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
             const header = document.getElementById('header');
@@ -622,22 +636,31 @@
                     contentPages.forEach(page => {
                         page.classList.remove('active');
                     });
-                    document.getElementById(targetPage + '-page').classList.add('active');
+                    
+                    // Safe access to target page element - prevent null reference error
+                    const targetPageElement = document.getElementById(targetPage + '-page');
+                    if (targetPageElement) {
+                        targetPageElement.classList.add('active');
+                        
+                        // Special handling for specific pages
+                        if (targetPage === 'clients') {
+                            refreshClients();
+                        } else if (targetPage === 'logs') {
+                            refreshLogs();
+                            // Inicializar o seletor de clientes para o console
+                            if (typeof refreshClientsForConsole === 'function') {
+                                refreshClientsForConsole();
+                            }
+                        } else if (targetPage === 'dashboard') {
+                            refreshDashboard();
+                        }
+                    } else {
+                        console.warn(`Page element with ID "${targetPage}-page" not found.`);
+                    }
                     
                     // If mobile, close sidebar
                     if (window.innerWidth < 992) {
                         sidebar.classList.remove('sidebar-mobile-open');
-                    }
-                    
-                    // Special handling for specific pages
-                    if (targetPage === 'clients') {
-                        refreshClients();
-                    } else if (targetPage === 'logs') {
-                        refreshLogs();
-                        // Inicializar o seletor de clientes para o console
-                        refreshClientsForConsole();
-                    } else if (targetPage === 'dashboard') {
-                        refreshDashboard();
                     }
                 });
             });
@@ -654,7 +677,22 @@
                     
                     // Find and click corresponding menu item to handle navigation
                     const menuItem = document.querySelector(`.menu-item[data-page="${targetPage}"]`);
-                    if (menuItem) menuItem.click();
+                    if (menuItem) {
+                        menuItem.click();
+                    } else {
+                        console.warn(`Menu item for page "${targetPage}" not found.`);
+                        
+                        // Fallback: try to manually activate the page if menu item isn't found
+                        const allPages = document.querySelectorAll('.content-page');
+                        allPages.forEach(page => page.classList.remove('active'));
+                        
+                        const targetPageElement = document.getElementById(targetPage + '-page');
+                        if (targetPageElement) {
+                            targetPageElement.classList.add('active');
+                        } else {
+                            console.error(`Page "${targetPage}" not found.`);
+                        }
+                    }
                 });
             });
             
@@ -1234,11 +1272,11 @@
                                     </td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <button onclick="targetClient('${client.id}')" class="action-btn">
+                                            <button onclick="targetClient('${client.id}')" class="btn btn-sm btn-danger">
                                                 <i class="fas fa-terminal"></i>
                                                 <span class="tooltip-action">Selecionar Cliente</span>
                                             </button>
-                                            <button onclick="removeClient('${client.id}')" class="action-btn delete">
+                                            <button onclick="removeClient('${client.id}')" class="btn btn-sm btn-danger delete">
                                                 <i class="fas fa-trash-alt"></i>
                                                 <span class="tooltip-action">Remover Cliente</span>
                                             </button>
@@ -1621,7 +1659,7 @@
                 if (typeof showNeonToast === 'function') {
                     showNeonToast("Atualizando dados dos clientes...", "info", 1000);
                 }
-                
+                refreshClients();
                 // Verifica se a página de clientes existe antes de atualizar
                 if (document.querySelector('.clients-page, #clients-page')) {
                     // Atualiza a lista principal de clientes na página de clientes
@@ -1642,7 +1680,9 @@
                 }
                 
                 // Atualiza também os logs que podem conter informações dos clientes
-                if (typeof refreshLogs === 'function') {
+                // Somente se a função refreshLogs existir e se estivermos na página de logs
+                if (typeof refreshLogs === 'function' && document.getElementById('logs-page') && 
+                    document.getElementById('logs-page').classList.contains('active')) {
                     refreshLogs();
                 }
                 
@@ -1681,6 +1721,7 @@
         }
 
         // Funções para compatibilidade com o console-terminal.js
+
         function getCommandTypeBadge(type) {
             switch(type) {
                 case 'js': return 'badge-bg-danger';
