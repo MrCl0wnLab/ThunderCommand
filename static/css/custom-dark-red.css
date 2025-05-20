@@ -116,15 +116,17 @@ body {
 .brand-icon img {
   width: auto;
   border-radius: 50%;
-  filter: drop-shadow(0 0 5px rgba(221, 12, 19, 0)) !important;
+  filter: drop-shadow(0 0 5px rgba(221, 12, 19, 0.3)) !important; /* Corrigido: valor 0 substituído por 0.3 */
+  transition: filter 0.3s;
 }
 
 .brand-icon:hover {
-  box-shadow: 0 0 5px rgba(221, 12, 19, 0) !important;
+  box-shadow: 0 0 5px rgba(221, 12, 19, 0.3) !important; /* Corrigido: valor 0 substituído por 0.3 */
 }
 
 .brand-icon:hover img {
-  filter: 0 0 5px rgba(221, 12, 19, 0) !important;
+  filter: brightness(1.2) !important; /* Corrigido: valor 'none' substituído por um valor válido de brightness */
+  transition: filter 0.3s;
 }
 
 /* Botões */
