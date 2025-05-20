@@ -409,6 +409,7 @@ def serve_payload_js(dinamic_file, dinamic_id):
 
 # Rota para servir a biblioteca cliente do Socket.IO
 @app.route('/js/socket.io.min.js')
+@app.route('/js/socket.io.min.js.map')
 def serve_socketio_js():
     """Rota para servir a biblioteca cliente do Socket.IO"""
     response = send_from_directory('static/js', 'socket.io.min.js', mimetype='application/javascript')

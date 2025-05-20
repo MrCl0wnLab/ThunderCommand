@@ -269,7 +269,7 @@ O painel administrativo moderno oferece várias opções para enviar comandos:
 - Para cada comando, são registrados: data/hora, tipo, conteúdo e cliente-alvo
 - Interface amigável para visualizar logs
 
-## Integrando em Outros Projetos
+## Integrando Payload JavaScript
 
 Para integrar o sistema em páginas existentes, basta incluir o script cliente:
 
