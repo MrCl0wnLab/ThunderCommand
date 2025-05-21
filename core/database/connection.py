@@ -9,6 +9,7 @@ class DatabaseConnection:
     Manages SQLite database connection and provides utility methods for executing queries.
     Designed as a singleton to maintain one connection throughout the application lifecycle.
     """
+    _database_name = 'thunder.db'
     _instance = None
 
     def __new__(cls, db_path: str = None):
@@ -16,7 +17,7 @@ class DatabaseConnection:
             cls._instance = super(DatabaseConnection, cls).__new__(cls)
             cls._instance._conn = None
             cls._instance._db_path = db_path or os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
-                os.path.abspath(__file__)))), 'thunder.db')
+                os.path.abspath(__file__)))), cls._database_name)
         return cls._instance
 
     def __init__(self, db_path: str = None):
