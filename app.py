@@ -584,6 +584,84 @@ if socketio_available:
         else:
             emit('admin_joined', {"success": False, "error": "Não autorizado"})
 
+@app.route('/command/result', methods=['POST'])
+def receive_command_result():
+    """
+    Endpoint para receber resultados da execução de comandos nos clientes.
+    Os clientes enviam feedback após a execução de cada comando, permitindo
+    monitoramento em tempo real e diagnóstico de problemas.
+    
+    Parâmetros esperados no JSON:
+    - client_id: ID do cliente que executou o comando
+    - command_id: ID do comando executado
+    - success: Booleano indicando se a execução foi bem-sucedida
+    - timestamp: Data/hora da execução
+    - result: Resultado ou mensagem de erro (opcional)
+    - execution_time: Tempo de execução em milissegundos (opcional)
+    """
+    data = request.json
+    
+    if not data:
+        return jsonify({"success": False, "error": "Dados não fornecidos"}), 400
+        
+    client_id = data.get('client_id')
+    command_id = data.get('command_id')
+    success = data.get('success', False)
+    timestamp = data.get('timestamp', datetime.now().isoformat())
+    result = data.get('result', '')
+    execution_time = data.get('execution_time', 0)
+    
+    if not client_id or not command_id:
+        return jsonify({"success": False, "error": "Parâmetros obrigatórios não fornecidos"}), 400
+    
+    # Registrar o resultado em um novo log ou adicionar ao log de comandos existente
+    result_entry = {
+        "client_id": client_id,
+        "command_id": command_id,
+        "success": success,
+        "timestamp": timestamp,
+        "result": result,
+        "execution_time": execution_time
+    }
+    
+    # Atualizar o log do comando correspondente, se existir
+    for log in command_logs:
+        if log["id"] == command_id:
+            log["results"] = log.get("results", [])
+            log["results"].append(result_entry)
+            log["last_result"] = result_entry
+            log["success_count"] = len([r for r in log["results"] if r["success"]])
+            log["error_count"] = len([r for r in log["results"] if not r["success"]])
+            break
+    
+    # Atualizar informações do cliente
+    if client_id in clients:
+        clients[client_id]["last_activity"] = timestamp
+        clients[client_id]["last_result"] = {
+            "command_id": command_id,
+            "success": success,
+            "timestamp": timestamp
+        }
+        
+        # Incrementar contadores específicos para resultados bem-sucedidos/falhos
+        if success:
+            clients[client_id]["successful_commands"] = clients[client_id].get("successful_commands", 0) + 1
+        else:
+            clients[client_id]["failed_commands"] = clients[client_id].get("failed_commands", 0) + 1
+    
+    # Notificar administradores conectados via WebSocket, se disponível
+    if socketio_available:
+        try:
+            socketio.emit('command_result', result_entry, room='admin')
+        except Exception as e:
+            print(f"Erro ao enviar resultado para os administradores: {e}")
+    
+    # Log para depuração
+    result_status = "com sucesso" if success else "com falha"
+    print(f"Resultado de comando recebido: Cliente {client_id}, Comando {command_id[:8]}, executado {result_status}")
+    
+    return jsonify({"success": True})
+
 # Rota para teste do parser de User-Agent
 @app.route('/teste-user-agent')
 @login_required
