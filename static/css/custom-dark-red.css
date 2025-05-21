@@ -406,6 +406,40 @@ body {
   overflow-x: auto;
 }
 
+
+/* Result Command Panel */
+#command-result-panel {
+  background-color: var(--bs-darkest);
+  border: 1px solid var(--bs-border-dark);
+  border-radius: 6px;
+  padding: 15px;
+  box-shadow: var(--card-shadow);
+}
+
+#command-result-panel h4 {
+  color: var(--bs-bright-red);
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+.command-result-container {
+  background-color: var(--bs-very-dark-brown);
+  border: 1px solid var(--bs-border-dark);
+  padding: 15px;
+  border-radius: 4px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.command-result-container pre {
+  color: var(--bs-light-accent);
+  margin: 0;
+  padding: 10px;
+  background-color: rgba(85, 34, 36, 0.2);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+
 #status {
   font-family: 'Roboto Mono', monospace;
   padding: 10px;
