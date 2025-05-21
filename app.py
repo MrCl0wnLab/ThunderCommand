@@ -379,7 +379,7 @@ def index():
     Página inicial do cliente que receberá os comandos do servidor.
     Renderiza o template server_to_client.html.
     """
-    return render_template('server_to_client.html')
+    return render_template('server_to_client.html', title='Cliente - Thunder Command')
 
 @app.route('/admin')
 @login_required
@@ -388,7 +388,7 @@ def admin():
     Painel de administração para envio de comandos.
     Acesso protegido pelo decorator login_required.
     """
-    return render_template('admin-dashboard.html')
+    return render_template('admin-dashboard.html', title='Painel de Administração - Thunder Command')
 
 @app.route('/<int:dinamic_id>/<dinamic_file>')
 def serve_payload_js(dinamic_file, dinamic_id):

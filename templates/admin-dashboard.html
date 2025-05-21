@@ -1,6 +1,28 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-{% include 'partials/head.html' %}
+<head>
+
+    {% include 'partials/head.html' %}
+    <!-- Socket.IO client -->
+    <script src="/static/js/socket.io.min.js"></script>
+    <!-- Parser de User Agent -->
+    <script src="/static/js/user-agent-parser.js"></script>
+    <!-- Ícones de navegador e sistema operacional -->
+    <script src="/static/js/browser-os-icons.js"></script>
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Chart JS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- Table Interactions JS -->
+    <script src="/static/js/table-interactions.js"></script>
+    <!-- Table Pagination JS -->
+    <script src="/static/js/table-pagination.js"></script>
+    <!-- Console Terminal JS -->
+    <script src="/static/js/console-terminal.js"></script>
+    <!-- Correções consolidadas para tabelas -->
+    <script src="/static/js/table-fixes-consolidated.js"></script>
+
+</head>
 <body>
     {% include 'partials/sidebar.html' %}
     {% include 'partials/header.html' %}
@@ -67,20 +89,7 @@
         </div>
     </div>
 
-    <!-- jQuery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <!-- Bootstrap 5.3.6 Bundle JS (inclui Popper.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
-    <!-- Chart JS via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- Table Interactions JS -->
-    <script src="/static/js/table-interactions.js"></script>
-    <!-- Table Pagination JS -->
-    <script src="/static/js/table-pagination.js"></script>
-    <!-- Console Terminal JS -->
-    <script src="/static/js/console-terminal.js"></script>
-    <!-- Correções consolidadas para tabelas -->
-    <script src="/static/js/table-fixes-consolidated.js"></script>
+    
     
     <!-- O resto do seu JavaScript permanece aqui -->
     <script>
