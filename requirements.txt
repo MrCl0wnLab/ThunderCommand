@@ -1,16 +1,21 @@
-# Framework web principal
-Flask==2.3.3
-
-# Dependências do Flask
-Werkzeug==2.3.7             # Utilitários e segurança (usado para hash de senhas)
-Jinja2==3.1.2               # Motor de templates
-itsdangerous==2.1.2         # Segurança para assinatura de cookies e tokens
-MarkupSafe==2.1.3           # Escape de strings para evitar injeções HTML
+# Framework web principal e suas dependências
+Flask==3.0.0               # Framework web moderno e leve
+Werkzeug==3.0.1            # Utilitários WSGI e segurança (usado para hash de senhas)
+Jinja2==3.1.3              # Motor de templates
+itsdangerous==2.1.2        # Segurança para assinatura de cookies e tokens
+MarkupSafe==2.1.3          # Escape de strings para evitar injeções HTML
 
 # Comunicação em tempo real
-flask-socketio==5.3.6       # Integração de Socket.IO com Flask
-python-socketio==5.10.0     # Implementação Python do Socket.IO
-python-engineio==4.8.0      # Camada de transporte para Socket.IO
+flask-socketio==5.3.6      # Integração de Socket.IO com Flask
+python-socketio==5.10.0    # Implementação Python do Socket.IO
+python-engineio==4.8.0     # Camada de transporte para Socket.IO
 
-# Servidor WSGI assíncrono para Socket.IO
-eventlet==0.35.1            # Para comunicação em tempo real
+# Servidor WSGI assíncrono
+eventlet==0.35.1           # Servidor WSGI para comunicação em tempo real
+greenlet==3.0.1            # Dependência do eventlet para threading leve
+
+# Utilitários
+python-dotenv==1.0.0       # Carregamento de variáveis de ambiente
+SQLAlchemy==2.0.23         # ORM para manipulação do banco de dados SQLite
+packaging==23.2            # Utilitários para versionamento
+typing-extensions==4.8.0   # Suporte aprimorado para type hints

