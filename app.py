@@ -8,6 +8,7 @@ from functools import wraps
 import os
 import uuid
 import mimetypes
+from collections import deque
 from core.utils.logger import app_logger, websocket_logger, command_logger, auth_logger, log_command, log_websocket_event, log_auth_event
 
 # Custom error handling
@@ -80,7 +81,7 @@ ADMIN_PASSWORD_HASH = generate_password_hash(ADMIN_PASSWORD)
 # Em produção, considere usar um banco de dados persistente
 commands = {'default': {"id": str(uuid.uuid4()), "command": "", "timestamp": datetime.now().isoformat()}}
 clients = {}  # Armazena informações sobre os clientes conectados
-command_logs = []  # Histórico de comandos enviados
+command_logs = deque(maxlen=100)  # Histórico de comandos enviados, limitado a 100 entradas
 socket_clients = {}  # Mapeia client_id para session_id do Socket.IO
 
 # Função auxiliar para formatar código JavaScript em um bloco try-catch
@@ -224,10 +225,6 @@ def set_command():
             }
             command_logs.append(log_entry)
             
-            # Limit history size
-            if len(command_logs) > 100:
-                command_logs.pop(0)
-            
             return jsonify({"success": True, "command": command_data})
             
         except Exception as e:
@@ -346,7 +343,7 @@ def remove_client(client_id):
 @login_required
 def get_logs():
     """Endpoint para obter o histórico de comandos enviados"""
-    return jsonify({"success": True, "logs": command_logs})
+    return jsonify({"success": True, "logs": list(command_logs)})
 
 @app.route('/')
 def index():
