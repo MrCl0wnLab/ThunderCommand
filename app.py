@@ -39,14 +39,31 @@ except ImportError:
 
 """
 Thunder Command: Sistema de Controle Remoto para Páginas Web
-=============================================================
+============================================
 
-Este aplicativo permite o envio de comandos JavaScript em tempo real para páginas web clientes.
-Um administrador pode executar JavaScript, manipular o DOM, injetar HTML e controlar
-a visibilidade de elementos em páginas remotas sem necessidade de atualização.
+Um sistema de execução de comandos JavaScript em tempo real para páginas web. 
+Esta aplicação permite que administradores executem JavaScript remotamente, 
+manipulem elementos DOM, injetem HTML e controlem a visibilidade de elementos 
+em páginas web cliente sem necessidade de atualização.
+
+Funcionalidades:
+    - Execução de comandos em tempo real via WebSocket ou HTTP polling
+    - Capacidades de manipulação DOM (adicionar, substituir, inserir conteúdo)
+    - Painel administrativo para monitoramento de clientes
+    - Rastreamento e gerenciamento de conexões de clientes
+    - Histórico de comandos e registro de execução
+    - Suporte para WebSocket e polling HTTP tradicional
+    - Autenticação segura para acesso administrativo
+
+Detalhes Técnicos:
+    - Construído com Flask e Flask-SocketIO
+    - Suporta comunicação síncrona e assíncrona
+    - Usa armazenamento em memória com histórico de comandos limitado
+    - Implementa gerenciamento seguro de sessões
+    - Fornece mecanismos de fallback para indisponibilidade de WebSocket
 
 Autores: MrCl0wn Security Lab
-Data de criação: Maio/2025
+Criação: Maio/2025
 Versão: 1.0 (Atualizado com WebSockets)
 """
 
@@ -86,18 +103,49 @@ socket_clients = {}  # Mapeia client_id para session_id do Socket.IO
 
 # Função auxiliar para formatar código JavaScript em um bloco try-catch
 def js_format_try_catch(js_code):
-    """
-    Envolve o código JavaScript em um bloco try-catch para evitar erros de execução.
-    "Trick" pra evitar que erros de JavaScript interrompam a execução do restante do código.
+    """Envolve código JavaScript em um bloco try-catch para tratamento de erros.
+    
+    Previne que erros de execução JavaScript interrompam o resto do código,
+    envolvendo o código fornecido em uma função auto-executável dentro de um
+    bloco try-catch. Se ocorrer um erro durante a execução, ele será
+    silenciosamente capturado.
+    
+    Args:
+        js_code (str): O código JavaScript a ser envolvido no bloco try-catch.
+            Pode ser qualquer declaração ou expressão JavaScript válida.
+    
+    Returns:
+        str: O código JavaScript envolvido no formato:
+            try{(function(){...código...}());}catch(err){}
+            Retorna None se js_code estiver vazio ou for None.
+    
+    Exemplo:
+        >>> js_format_try_catch("document.getElementById('test').innerHTML = 'Olá';")
+        "try{(function(){document.getElementById('test').innerHTML = 'Olá';}());}catch(err){}"
     """
     if js_code:
         return f'try{{(function(){{{js_code}}}());}}catch(err){{}}'
 
 # Decorator para proteger rotas que exigem autenticação
 def login_required(f):
-    """
-    Decorator que redireciona para a página de login se o usuário não estiver autenticado.
-    Aplique este decorator a todas as rotas de administração que precisam ser protegidas.
+    """Decorator para proteger rotas que requerem autenticação.
+    
+    Verifica se o usuário está logado através da presença de 'logged_in' na sessão.
+    Se não estiver logado, redireciona para a página de login com a URL original
+    como parâmetro 'next'.
+    
+    Args:
+        f (callable): A função de visualização a ser decorada.
+    
+    Returns:
+        callable: A função decorada que verifica a autenticação antes de executar
+            a função de visualização original.
+    
+    Exemplo de Uso:
+        @app.route('/admin')
+        @login_required
+        def admin():
+            return render_template('admin.html')
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -108,10 +156,15 @@ def login_required(f):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """
-    Authentication route for the admin panel
-    GET: Display login page
-    POST: Process login attempt
+    """Rota de autenticação para o painel administrativo.
+    
+    GET: Exibe a página de login
+    POST: Processa a tentativa de login
+    
+    Returns:
+        GET: Página de login com mensagem de erro opcional
+        POST: Redirecionamento para o painel admin em caso de sucesso,
+              ou página de login com mensagem de erro
     """
     error = None
     if request.method == 'POST':
@@ -147,7 +200,47 @@ def logout():
 @app.route('/admin/set_command', methods=['POST'])
 @login_required
 def set_command():
-    """Endpoint to set a command for a specific client"""
+    """Define um comando para execução em um cliente específico.
+    
+    Processa e armazena um comando para ser executado em um cliente alvo.
+    O comando pode ser JavaScript puro, injeção de HTML ou manipulação do DOM.
+    Os comandos são entregues via WebSocket (se disponível) ou obtidos pelos
+    clientes através de polling.
+    
+    Parâmetros JSON da Requisição:
+        client_id (str): O ID do cliente alvo.
+        type (str): Tipo do comando. Um dos seguintes:
+            - 'js': Execução direta de JavaScript
+            - 'html': Injeção de conteúdo HTML
+            - 'manipulate': Manipulação de elemento DOM
+        content (str): O conteúdo a ser executado ou injetado.
+        target_id (str, opcional): Necessário para tipo 'manipulate'. ID/classe do elemento alvo.
+        action (str, opcional): Necessário para tipo 'manipulate'. A ação de manipulação.
+    
+    Returns:
+        Resposta JSON com estrutura:
+            {
+                "success": bool,
+                "command": {
+                    "id": str,
+                    "command": str,
+                    "timestamp": str,
+                    "type": str
+                }
+            }
+    
+    Raises:
+        CommandError: Para requisições inválidas, parâmetros faltando ou tipos
+                     de comando não suportados.
+    
+    Exemplo:
+        POST /admin/set_command
+        {
+            "client_id": "cliente123",
+            "type": "js",
+            "content": "alert('Olá');"
+        }
+    """
     try:
         data = request.get_json()
         if not data:
@@ -237,7 +330,33 @@ def set_command():
         raise CommandError(str(e))
 
 def generate_manipulation_command(target_id, action, content):
-    """Generate JavaScript command for DOM manipulation"""
+    """Gera comandos JavaScript para operações de manipulação do DOM.
+    
+    Cria código JavaScript para manipular elementos DOM por ID ou nome de classe.
+    A função gera múltiplos comandos alternativos para lidar com seletores de
+    classe e ID, garantindo que a operação funcione independentemente de como
+    o elemento é identificado.
+    
+    Args:
+        target_id (str): O ID ou nome da classe do elemento DOM alvo.
+        action (str): O tipo de manipulação a ser realizada. Valores válidos são:
+            - 'ADD': Adiciona conteúdo ao elemento existente
+            - 'REPLACE': Substitui todo o conteúdo do elemento
+            - 'INSERT_AFTER': Insere conteúdo após o elemento
+            - 'INSERT_BEFORE': Insere conteúdo antes do elemento
+        content (str): O conteúdo HTML para inserir ou manipular.
+    
+    Returns:
+        str: Comandos JavaScript concatenados envolvidos em blocos try-catch para
+            tratamento de erros.
+    
+    Raises:
+        CommandError: Se o tipo de ação não for um dos valores suportados.
+    
+    Exemplo:
+        >>> generate_manipulation_command('meuDiv', 'ADD', '<p>Olá</p>')
+        'try{...}catch(err){}try{...}catch(err){}'
+    """
     commands = {
         'ADD': [
             f"document.getElementsByClassName('{target_id}')[0].innerHTML += `{content}`;",
@@ -391,12 +510,25 @@ def serve_socketio_js():
 # Rota principal para o polling de comandos pelos clientes
 @app.route('/command')
 def get_command():
-    """
-    Endpoint principal para o polling de comandos pelos clientes.
-    Suporta JSONP para contornar restrições de CORS quando necessário.
+    """Endpoint principal para polling de comandos pelos clientes.
     
-    Cada cliente solicita periodicamente este endpoint para verificar
-    se há novos comandos disponíveis para execução.
+    Suporta JSONP para contornar restrições de CORS quando necessário.
+    Cada cliente solicita periodicamente este endpoint para verificar se há
+    novos comandos disponíveis para execução.
+    
+    Parâmetros da Query:
+        client_id (str): ID do cliente solicitante (default: 'default')
+        last_id (str): ID do último comando recebido
+        callback (str, opcional): Nome da função callback para JSONP
+    
+    Returns:
+        Resposta JSON/JSONP contendo o comando atual para o cliente:
+        {
+            "new": bool,  # indica se é um comando novo
+            "id": str,    # ID único do comando
+            "command": str, # código JavaScript a ser executado
+            "timestamp": str # momento da criação do comando
+        }
     """
     client_id = request.args.get('client_id', 'default')
     last_received = request.args.get('last_id', '')
@@ -457,7 +589,19 @@ def get_command():
 if socketio_available:
     @socketio.on('connect')
     def handle_connect():
-        """Handle new WebSocket connections"""
+        """Manipula novas conexões WebSocket.
+        
+        Registra novas conexões e atribui um ID de sessão. Esta é a conexão
+        WebSocket inicial, antes do registro do cliente.
+        
+        Nota:
+            Isto não significa que o cliente está registrado ainda. Os clientes
+            devem enviar um evento 'register' após a conexão para serem
+            completamente inicializados.
+        
+        Eventos Emitidos:
+            Nenhum evento emitido diretamente.
+        """
         try:
             session_id = request.sid
             log_websocket_event('connect', data={'session_id': session_id})
@@ -467,9 +611,24 @@ if socketio_available:
 
     @socketio.on('register')
     def handle_register(data):
-        """
-        Register a client connected via WebSocket.
-        Associates the client ID with the current WebSocket session.
+        """Registra um cliente conectado via WebSocket.
+        
+        Associa o ID do cliente com a sessão WebSocket atual e inicializa
+        ou atualiza as informações do cliente. Também envia quaisquer comandos
+        pendentes para clientes recém-registrados.
+        
+        Args:
+            data (dict): Dados de registro contendo:
+                client_id (str): Identificador único para o cliente
+        
+        Eventos Emitidos:
+            - 'client_update': Para sala admin quando um novo cliente conecta
+            - 'command': Para o cliente se houver comandos pendentes
+            - 'register_error': Para o cliente se o registro falhar
+        
+        Nota:
+            Isto é necessário após a conexão inicial para que o cliente
+            comece a receber comandos e atualizações.
         """
         try:
             client_id = data.get('client_id')
@@ -591,7 +750,25 @@ if socketio_available:
 
 @app.route('/command/result', methods=['POST'])
 def receive_command_result():
-    """Endpoint to receive command execution results from clients"""
+    """Endpoint para receber resultados da execução de comandos dos clientes.
+    
+    Recebe e processa os resultados da execução de comandos, atualizando logs
+    e estatísticas. Notifica administradores sobre os resultados via WebSocket
+    quando disponível.
+    
+    JSON da Requisição:
+        client_id (str): ID do cliente que executou o comando
+        command_id (str): ID do comando executado
+        success (bool): Indica se o comando foi executado com sucesso
+        result (str): Resultado ou mensagem de erro da execução
+        execution_time (float): Tempo de execução em milissegundos
+    
+    Returns:
+        Resposta JSON indicando sucesso do processamento
+    
+    Raises:
+        CommandError: Para requisições inválidas ou parâmetros faltando
+    """
     try:
         data = request.get_json()
         if not data:
