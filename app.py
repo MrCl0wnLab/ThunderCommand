@@ -851,13 +851,6 @@ def receive_command_result():
         app_logger.exception("Error processing command result")
         raise CommandError(str(e))
 
-# Rota para teste do parser de User-Agent
-@app.route('/teste-user-agent')
-@login_required
-def teste_user_agent():
-    """Página para testes do parser de User-Agent"""
-    return render_template('teste-user-agent.html')
-
 @app.route('/favicon.ico')
 def favicon():
     """Rota para o favicon.ico"""
