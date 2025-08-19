@@ -3,19 +3,21 @@
  * =============================================
  * 
  * Este módulo implementa um cliente para recebimento de comandos JavaScript remotos,
- * permitindo a execução de comandos enviados por um servidor central. O sistema suporta:
+ * permitindo a execução de comandos enviados por um servidor central. O sistema utiliza
+ * exclusivamente HTTP polling para máxima compatibilidade e simplicidade:
  * 
- * - Conexão via WebSockets para comunicação bidirecional em tempo real
- * - Fallback para polling quando WebSockets não está disponível
- * - Arquivos locais (via JSONP para contornar restrições de CORS)
- * - Páginas servidas por servidor (via fetch API)
+ * - Comunicação via HTTP polling para compatibilidade universal
+ * - Suporte a arquivos locais (via JSONP para contornar restrições de CORS)
+ * - Suporte a páginas servidas por servidor (via fetch API)
  * - Reconexão automática com estratégia de backoff exponencial
  * - Gestão de estado de conexão e feedback visual
  * - Identificação persistente de clientes via localStorage
+ * - Captura e envio de resultados de execução de comandos
+ * - Medição de tempo de execução para análise de performance
  * 
  * Autor: Administrador do Projeto
- * Versão: 2.0
- * Última atualização: Maio/2025
+ * Versão: 4.1
+ * Última atualização: Agosto/2025
  */
 
 // Módulo principal usando padrão IIFE (Immediately Invoked Function Expression) para encapsulamento
@@ -30,9 +32,7 @@ const PushClient = (function() {
     let isLocalFile = false;           // Flag para detectar se estamos em arquivo local
     let clientId = '';                 // ID único do cliente
     let connectionStatus = 'disconnected'; // Estado atual da conexão
-    let socket = null;                 // Objeto de conexão WebSocket
-    let useWebSocket = true;           // Flag para indicar uso de WebSockets (default) ou fallback
-    let wsConnected = false;           // Estado da conexão WebSocket
+    let pollingActive = false;         // Flag para indicar se o polling está ativo
     
     // Cache para elementos DOM frequentemente acessados
     let statusElement = null;          // Elemento para exibir status da conexão
@@ -63,8 +63,7 @@ const PushClient = (function() {
     function init() {
         console.log('Iniciando cliente controle remoto');
         
-        // Verifica disponibilidade de WebSocket no navegador
-        useWebSocket = window.WebSocket || window.MozWebSocket;
+        // Using HTTP polling only - no WebSocket dependencies
         
         // Determina a origem do servidor baseado no script atual
         serverOrigin = new URL(document.currentScript.src).origin;
@@ -74,7 +73,7 @@ const PushClient = (function() {
         console.log('Server origin:', serverOrigin);
         console.log('Command endpoint:', commandEndpoint);
         console.log('Is local file:', isLocalFile);
-        console.log('WebSocket disponível:', !!useWebSocket);
+        console.log('Using HTTP polling mode');
         
         // Gerar ID único para o cliente ou recuperar um existente
         clientId = localStorage.getItem('clientId');
@@ -108,131 +107,22 @@ const PushClient = (function() {
     }
     
     /**
-     * Tenta estabelecer conexão WebSocket, com fallback para polling
+     * Estabelece conexão usando HTTP polling
      */
     function connect() {
-        // Se WebSocket estiver disponível e não estivermos em um arquivo local, usar WebSockets
-        if (useWebSocket && !isLocalFile) {
-            connectWebSocket();
-        } else {
-            // Fallback para polling
-            console.log('WebSocket indisponível ou arquivo local. Usando polling como fallback.');
-            updateConnectionStatus('connected');
-            checkForCommands();
-        }
-    }
-    
-    /**
-     * Estabelece conexão WebSocket com o servidor
-     */
-    function connectWebSocket() {
+        console.log('Iniciando conexão via HTTP polling');
         updateConnectionStatus('connecting');
-        
-        try {
-            // Carregar Socket.IO
-            if (typeof io !== 'function') {
-                // Se a biblioteca Socket.IO ainda não foi carregada, carregá-la
-                console.log('Carregando biblioteca Socket.IO');
-                const script = document.createElement('script');
-                script.src = `${serverOrigin}/js/socket.io.min.js`;
-                script.onload = initializeSocketIO;
-                script.onerror = fallbackToPolling;
-                document.head.appendChild(script);
-            } else {
-                // Se a biblioteca já está carregada, inicializar
-                initializeSocketIO();
-            }
-        } catch (e) {
-            console.error('Erro ao conectar WebSocket:', e);
-            fallbackToPolling();
-        }
-    }
-    
-    /**
-     * Inicializar a conexão Socket.IO
-     */
-    function initializeSocketIO() {
-        try {
-            console.log('Inicializando Socket.IO');
-            socket = io(serverOrigin);
-            
-            socket.on('connect', () => {
-                console.log('WebSocket conectado!');
-                wsConnected = true;
-                updateConnectionStatus('connected');
-                
-                // Registrar cliente com ID
-                socket.emit('register', { client_id: clientId });
-                
-                // Resetar contagem de tentativas
-                retryCount = 0;
-            });
-            
-            socket.on('command', (data) => {
-                console.log('Comando recebido via WebSocket:', data);
-                if (data && data.command) {
-                    lastCommandId = data.id;
-                    executeCommand(data.command);
-                    updateStatus(`Comando executado às ${new Date().toLocaleTimeString()} (WebSocket)`);
-                }
-            });
-            
-            socket.on('disconnect_request', () => {
-                console.log('Solicitação de desconexão recebida');
-                socket.disconnect();
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('WebSocket desconectado');
-                wsConnected = false;
-                
-                if (retryCount < maxRetry) {
-                    updateConnectionStatus('disconnected');
-                    setTimeout(() => {
-                        socket.connect();
-                    }, 1000 * Math.pow(2, retryCount));
-                    retryCount++;
-                } else {
-                    console.log('Máximo de tentativas WebSocket atingido, usando polling');
-                    fallbackToPolling();
-                }
-            });
-            
-            socket.on('error', (error) => {
-                console.error('Erro no WebSocket:', error);
-                fallbackToPolling();
-            });
-            
-        } catch (e) {
-            console.error('Erro ao inicializar Socket.IO:', e);
-            fallbackToPolling();
-        }
-    }
-    
-    /**
-     * Fallback para polling quando WebSocket falha
-     */
-    function fallbackToPolling() {
-        console.log('Usando polling como fallback');
-        useWebSocket = false;
-        wsConnected = false;
-        
-        if (socket) {
-            socket.disconnect();
-            socket = null;
-        }
-        
-        updateConnectionStatus('connected');
+        pollingActive = true;
         checkForCommands();
     }
+    
     
     /**
      * Verifica se há novos comandos no servidor usando polling
      * Escolhe método apropriado baseado no tipo de carregamento da página
      */
     function checkForCommands() {
-        // Se já estamos conectados por WebSocket, não precisamos de polling
-        if (wsConnected) {
+        if (!pollingActive) {
             return;
         }
         
@@ -309,32 +199,221 @@ const PushClient = (function() {
      * @param {Object} data - Dados recebidos do servidor
      */
     function handleResponse(data) {
+        console.log('Dados recebidos do servidor:', data);
+        
         if (data && data.new && data.command) {
-            console.log('Novo comando recebido:', data.command);
+            console.log('Novo comando recebido');
+            
             lastCommandId = data.id;   // Atualiza ID do último comando
-            executeCommand(data.command);
+            executeCommand(data.command, data);
             updateStatus(`Comando executado às ${new Date().toLocaleTimeString()}`);
         } else {
-            console.log('Nenhum novo comando ou comando inválido');
+            console.log('Nenhum novo comando disponível');
         }
     }
     
     /**
      * Executa código JavaScript recebido do servidor
      * Usa Function constructor para criar função a partir de string
+     * Suporta captura de resultados quando habilitada pelo servidor
      * 
      * @param {string} command - Código JavaScript a ser executado
+     * @param {Object} commandData - Dados completos do comando do servidor
      */
-    function executeCommand(command) {
+    function executeCommand(command, commandData = {}) {
+        const startTime = performance.now();
+        let result = null;
+        let success = true;
+        let error = null;
+        
         try {
             console.log('Executando comando:', command);
-            // Cria e executa função a partir da string do comando
-            const execFunc = new Function(command);
-            execFunc();
-        } catch (error) {
-            updateStatus(`Erro ao executar comando: ${error.message}`);
-            console.error("Erro ao executar comando:", error);
+            
+            // Estratégia inteligente de execução de comando:
+            // 1. Primeiro tenta executar como expressão (com return)
+            // 2. Se falhar, tenta executar como statement (sem return)
+            // 3. Captura o resultado em ambos os casos
+            
+            try {
+                // Tentativa 1: Executar como expressão que retorna valor
+                const exprFunc = new Function('return (' + command + ')');
+                result = exprFunc();
+                console.log('Comando executado como expressão. Resultado:', result, '(tipo:', typeof result + ')');
+            } catch (exprError) {
+                // Tentativa 2: Executar como statement
+                console.log('Comando não é expressão, executando como statement');
+                const stmtFunc = new Function(command);
+                result = stmtFunc();
+                console.log('Comando executado como statement. Resultado:', result, '(tipo:', typeof result + ')');
+            }
+            
+        } catch (executeError) {
+            success = false;
+            error = executeError;
+            result = executeError.message;
+            updateStatus(`Erro ao executar comando: ${executeError.message}`);
+            console.error("Erro ao executar comando:", executeError);
         }
+        
+        // SEMPRE capturar e enviar resultados para garantir histórico completo
+        // Ignoramos a flag capture_results para garantir que todos os comandos sejam rastreados
+        if (true) {
+            const endTime = performance.now();
+            const executionTime = Math.round(endTime - startTime);
+            
+            console.log('Captura de resultados habilitada. Enviando resultado para o servidor...');
+            
+            // Processamento inteligente do resultado
+            let resultString = '';
+            let resultType = 'unknown';
+            
+            if (success) {
+                if (result === undefined) {
+                    resultString = 'undefined';
+                    resultType = 'undefined';
+                } else if (result === null) {
+                    resultString = 'null';
+                    resultType = 'null';
+                } else if (typeof result === 'boolean') {
+                    resultString = String(result);
+                    resultType = 'boolean';
+                } else if (typeof result === 'number') {
+                    resultString = String(result);
+                    resultType = 'number';
+                } else if (typeof result === 'string') {
+                    resultString = result;
+                    resultType = 'string';
+                } else if (typeof result === 'object') {
+                    try {
+                        resultString = JSON.stringify(result, null, 2);
+                        resultType = Array.isArray(result) ? 'array' : 'object';
+                    } catch (e) {
+                        resultString = String(result);
+                        resultType = 'object_error';
+                    }
+                } else if (typeof result === 'function') {
+                    resultString = '[Function: ' + (result.name || 'anonymous') + ']';
+                    resultType = 'function';
+                } else {
+                    resultString = String(result);
+                    resultType = typeof result;
+                }
+            } else {
+                resultString = String(result || 'Erro desconhecido');
+                resultType = 'error';
+            }
+            
+            console.log('Enviando resultado para servidor:', {
+                value: resultString,
+                type: resultType,
+                success: success
+            });
+            
+            // Enviar resultado para o servidor com metadados completos
+            sendResultToServer({
+                command_id: commandData.id,
+                client_id: clientId,
+                success: success,
+                result: resultString,
+                result_type: resultType,
+                execution_time: executionTime,
+                timestamp: new Date().toISOString(),
+                command_original: command,
+                user_agent: navigator.userAgent
+            });
+        }
+    }
+    
+    /**
+     * Envia resultado da execução de comando para o servidor
+     * Suporta tanto arquivos locais (JSONP) quanto páginas servidas (fetch)
+     * 
+     * @param {Object} resultData - Dados do resultado a serem enviados
+     */
+    function sendResultToServer(resultData) {
+        console.log('Enviando resultado:', {
+            success: resultData.success,
+            result: resultData.result,
+            execution_time: resultData.execution_time + 'ms'
+        });
+        
+        if (isLocalFile) {
+            // Para arquivos locais, usar JSONP com método GET
+            sendResultViaJSONP(resultData);
+        } else {
+            // Para páginas servidas, usar fetch com método POST
+            sendResultViaFetch(resultData);
+        }
+    }
+    
+    /**
+     * Envia resultado via JSONP (para arquivos locais)
+     * Como JSONP só suporta GET, enviamos os dados via query parameters
+     * 
+     * @param {Object} resultData - Dados do resultado
+     */
+    function sendResultViaJSONP(resultData) {
+        console.log('Enviando resultado via JSONP');
+        
+        const params = new URLSearchParams({
+            command_id: resultData.command_id,
+            client_id: resultData.client_id,
+            success: resultData.success,
+            result: resultData.result,
+            execution_time: resultData.execution_time,
+            callback: 'PushClient.handleResultResponse'
+        });
+        
+        const script = document.createElement('script');
+        script.src = `${serverOrigin}/command/result?${params.toString()}`;
+        script.onerror = function() {
+            console.error('Erro ao enviar resultado via JSONP');
+        };
+        
+        document.head.appendChild(script);
+        console.log('JSONP result request:', script.src);
+    }
+    
+    /**
+     * Envia resultado via fetch API (para páginas servidas)
+     * 
+     * @param {Object} resultData - Dados do resultado
+     */
+    function sendResultViaFetch(resultData) {
+        console.log('Enviando resultado via fetch');
+        
+        fetch(`${serverOrigin}/command/result`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(resultData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Resultado enviado com sucesso:', data);
+        })
+        .catch(error => {
+            console.error('Erro ao enviar resultado:', error);
+        });
+    }
+    
+    /**
+     * Callback para resposta JSONP do envio de resultado
+     * 
+     * @param {Object} data - Resposta do servidor
+     */
+    function handleResultResponse(data) {
+        console.log('Resposta do servidor para resultado via JSONP:', data);
+        
+        // Remover script JSONP usado
+        const scriptTags = document.head.querySelectorAll('script[src*="callback=PushClient.handleResultResponse"]');
+        scriptTags.forEach(tag => tag.remove());
     }
     
     /**
@@ -427,12 +506,15 @@ const PushClient = (function() {
     // API pública - apenas métodos que precisam ser expostos
     return {
         handleCommand,       // Exposto para JSONP
+        handleResultResponse, // Exposto para JSONP de resultados
         updateStatus,        // Exposto para acesso/debugging externo
         executeCommand,      // Exposto para testes/debugging
-        isWebSocketActive: () => wsConnected // Status da conexão WebSocket para debugging
+        sendResultToServer,  // Exposto para testes/debugging
+        isPollingActive: () => pollingActive // Status do polling para debugging
     };
 })();
 
 // Para compatibilidade com versões anteriores e JSONP
 window.handleCommand = PushClient.handleCommand;
+window.handleResultResponse = PushClient.handleResultResponse;
 window.updateStatus = PushClient.updateStatus;

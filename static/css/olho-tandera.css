@@ -1900,3 +1900,164 @@ textarea.form-control{
     word-break: break-all;
     color: #e0e0e0;
 }
+
+/* Result Capture Toggle Styles */
+.capture-toggle-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.capture-toggle-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.capture-setting-info {
+    flex: 1;
+}
+
+.capture-setting-info .form-label {
+    color: var(--accent-color);
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+.capture-setting-info .text-muted {
+    color: #a0a0a0 !important;
+    font-size: 12px;
+}
+
+/* Toggle Switch */
+.capture-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.capture-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.capture-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: all 0.3s ease;
+    border-radius: 26px;
+    border: 2px solid var(--border-controll-color);
+}
+
+.capture-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #8a8a8a;
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Checked state */
+.capture-toggle-switch input:checked + .capture-slider {
+    background-color: var(--accent-color);
+    border-color: var(--accent-highlight);
+    box-shadow: 0 0 8px rgba(221, 12, 18, 0.3);
+}
+
+.capture-toggle-switch input:checked + .capture-slider:before {
+    transform: translateX(24px);
+    background-color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* Hover effects */
+.capture-toggle-switch:hover .capture-slider {
+    box-shadow: 0 0 6px rgba(221, 12, 18, 0.2);
+}
+
+.capture-toggle-switch input:checked:hover + .capture-slider {
+    box-shadow: 0 0 12px rgba(221, 12, 18, 0.4);
+}
+
+/* Status Indicator */
+.capture-status-indicator {
+    display: flex;
+    align-items: center;
+    min-width: 80px;
+}
+
+.capture-status-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.capture-status-label {
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.capture-status-label.enabled {
+    color: var(--bs-success);
+}
+
+.capture-status-label.disabled {
+    color: #8a8a8a;
+}
+
+.capture-status-icon {
+    display: flex;
+    align-items: center;
+}
+
+.capture-status-icon i {
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+/* Loading state */
+.capture-loading {
+    display: flex;
+    align-items: center;
+    color: #8a8a8a;
+    font-size: 12px;
+}
+
+.htmx-indicator {
+    display: none;
+}
+
+.htmx-request .htmx-indicator {
+    display: inline-flex;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .capture-toggle-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .capture-setting-info {
+        margin-bottom: 10px;
+    }
+    
+    .capture-toggle-wrapper {
+        align-self: flex-end;
+    }
+}

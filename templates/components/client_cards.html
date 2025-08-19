@@ -1,0 +1,111 @@
+<!-- Client card and information display macros -->
+
+{% macro client_info_card(client_id="", show_info=false) %}
+<div id="client-info-section" class="mb-4 {% if not show_info %}d-none{% endif %}">
+    <div class="card border-accent card-green">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-info-circle me-2 text-accent"></i>
+                <span>Informações do Cliente Selecionado</span>
+            </div>
+            <div class="client-status-badge" id="client-status-badge">
+                <span class="badge bg-secondary">Status Desconhecido</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="client-info-header mb-3">
+                <div class="client-avatar">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="client-indicator" id="client-indicator"></span>
+                </div>
+                <div class="client-primary-info">
+                    <h5 id="info-client-id-title">Cliente</h5>
+                    <div class="client-tech-tags" id="client-tech-tags">
+                        <!-- Badges serão inseridas dinamicamente -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row info-grid">
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-fingerprint"></i></div>
+                        <div class="info-content">
+                            <span class="info-label">ID</span>
+                            <span class="info-value"><code id="info-client-id">-</code></span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-network-wired"></i></div>
+                        <div class="info-content">
+                            <span class="info-label">IP</span>
+                            <span class="info-value" id="info-client-ip">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-wifi"></i></div>
+                        <div class="info-content">
+                            <span class="info-label">Conexão</span>
+                            <span class="info-value" id="info-client-connection">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-clock"></i></div>
+                        <div class="info-content">
+                            <span class="info-label">Primeiro Acesso</span>
+                            <span class="info-value" id="info-client-first-seen">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-history"></i></div>
+                        <div class="info-content">
+                            <span class="info-label">Última Atividade</span>
+                            <span class="info-value" id="info-client-last-seen">-</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fas fa-desktop"></i></div>
+                        <div class="info-content">
+                            <span class="info-label">User Agent</span>
+                            <span class="info-value" id="info-client-user-agent">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro stats_card(title, value, icon, color_class="primary", id_prefix="") %}
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-{{ color_class }} shadow h-100 py-2 card-modern">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-{{ color_class }} text-uppercase mb-1">
+                        {{ title }}
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" 
+                         {% if id_prefix %}id="{{ id_prefix }}-count"{% endif %}>
+                        {{ value }}
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="{{ icon }} fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro connection_badge(connection_type="polling") %}
+{% if connection_type == "polling" %}
+<span class="badge badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>
+{% else %}
+<span class="badge bg-secondary"><i class="fas fa-question me-1"></i>Desconhecido</span>
+{% endif %}
+{% endmacro %}

@@ -247,7 +247,7 @@ function refreshLogs() {
                 // Ordenar logs do mais recente para o mais antigo
                 data.logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
-                const logsHtml = data.logs.map(log => {
+                const logsHtml = data.logs.map((log, index) => {
                     // Formatação da data e hora
                     const date = new Date(log.timestamp);
                     const timeStr = date.toTimeString().split(' ')[0];
@@ -264,26 +264,122 @@ function refreshLogs() {
                         default: typeIcon = 'fa-terminal'; break;
                     }
                     
+                    // Gerar conteúdo da aba de comando
+                    const commandContent = `
+                        <div class="command-display">
+                            <pre class="command-code"><code>${escapeHtml(log.command)}</code></pre>
+                            <div class="command-actions mt-2">
+                                <button class="console-button primary" onclick="copyToConsole('${escapeHtml(log.command.replace(/'/g, "\\'"))}')">
+                                    <i class="fas fa-play me-1"></i> Executar
+                                </button>
+                                <button class="console-button" onclick="copyToClipboard('${escapeHtml(log.command.replace(/'/g, "\\'"))}')">
+                                    <i class="fas fa-copy me-1"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Gerar conteúdo da aba de resultado
+                    let resultContent;
+                    if (log.has_results && log.results && log.results.length > 0) {
+                        const resultsHtml = log.results.map(result => {
+                            const resultDate = result.timestamp ? new Date(result.timestamp) : null;
+                            const resultTimeStr = resultDate ? resultDate.toTimeString().split(' ')[0] : 'N/A';
+                            
+                            return `
+                                <div class="result-item ${result.success ? 'success' : 'error'}">
+                                    <div class="result-header">
+                                        <span class="result-status">
+                                            <i class="fas ${result.success ? 'fa-check-circle text-success' : 'fa-times-circle text-danger'}"></i>
+                                            ${result.success ? 'Sucesso' : 'Erro'}
+                                        </span>
+                                        <span class="result-time">
+                                            <i class="fas fa-clock me-1"></i>${resultTimeStr}
+                                        </span>
+                                        ${result.execution_time ? `<span class="execution-time"><i class="fas fa-stopwatch me-1"></i>${result.execution_time}ms</span>` : ''}
+                                    </div>
+                                    <div class="result-content">
+                                        <code class="${result.success ? 'result-success' : 'result-error'}">
+                                            ${escapeHtml(result.result || (result.success ? 'undefined' : 'Erro desconhecido'))}
+                                        </code>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        resultContent = `
+                            <div class="results-display">
+                                <div class="results-summary">
+                                    <span class="total-results">${log.total_results} execução(ões)</span>
+                                    ${log.success_count > 0 ? `<span class="success-count"><i class="fas fa-check"></i> ${log.success_count}</span>` : ''}
+                                    ${log.error_count > 0 ? `<span class="error-count"><i class="fas fa-times"></i> ${log.error_count}</span>` : ''}
+                                </div>
+                                <div class="results-list">
+                                    ${resultsHtml}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultContent = `
+                            <div class="no-result">
+                                <div class="no-result-content">
+                                    <i class="fas fa-hourglass-half text-muted me-2"></i>
+                                    <span class="text-muted">Aguardando resultado da execução...</span>
+                                </div>
+                                <small class="text-muted">
+                                    O resultado aparecerá aqui quando o comando for executado no cliente.
+                                </small>
+                            </div>
+                        `;
+                    }
+                    
+                    // Determinar status do resultado para a badge
+                    let resultBadge = '';
+                    if (log.overall_status === 'success') {
+                        resultBadge = '<span class="result-status-badge success"><i class="fas fa-check"></i></span>';
+                    } else if (log.overall_status === 'error') {
+                        resultBadge = '<span class="result-status-badge error"><i class="fas fa-times"></i></span>';
+                    } else if (log.overall_status === 'pending') {
+                        resultBadge = '<span class="result-status-badge pending"><i class="fas fa-clock"></i></span>';
+                    } else {
+                        resultBadge = '<span class="result-status-badge no-response"><i class="fas fa-minus"></i></span>';
+                    }
+                    
                     return `
                     <div class="console-history-entry">
-                        <div class="console-history-timestamp">
-                            <i class="fas fa-calendar-alt me-1"></i> ${dateStr}
-                            <i class="fas fa-clock ms-3 me-1"></i> ${timeStr}
-                            <span class="console-history-type ${log.type}">
-                                <i class="fas ${typeIcon} me-1"></i>${log.type}
-                            </span>
+                        <div class="console-history-header">
+                            <div class="console-history-timestamp">
+                                <i class="fas fa-calendar-alt me-1"></i> ${dateStr}
+                                <i class="fas fa-clock ms-3 me-1"></i> ${timeStr}
+                                <span class="console-history-type ${log.type}">
+                                    <i class="fas ${typeIcon} me-1"></i>${log.type}
+                                </span>
+                            </div>
+                            <div class="console-history-client">
+                                <i class="fas fa-user me-1"></i> Cliente: ${log.client_id}
+                            </div>
                         </div>
-                        <div class="console-history-client">
-                            <i class="fas fa-user me-1"></i> Cliente: ${log.client_id}
-                        </div>
-                        <div class="console-history-command">${escapeHtml(log.command)}</div>
-                        <div class="mt-2">
-                            <button class="console-button primary" onclick="copyToConsole('${escapeHtml(log.command.replace(/'/g, "\\'"))}')">
-                                <i class="fas fa-play me-1"></i> Executar
-                            </button>
-                            <button class="console-button" onclick="copyToClipboard('${escapeHtml(log.command.replace(/'/g, "\\'"))}')">
-                                <i class="fas fa-copy me-1"></i> Copiar
-                            </button>
+                        
+                        <div class="log-entry-tabs" id="log-${index}">
+                            <div class="simple-tabs-nav">
+                                <button class="simple-tab-btn active" data-tab="command" onclick="switchTab('log-${index}', 'command')">
+                                    <i class="fas fa-code me-1"></i>Comando
+                                </button>
+                                <button class="simple-tab-btn" data-tab="result" onclick="switchTab('log-${index}', 'result')">
+                                    <i class="fas fa-play-circle me-1"></i>Resultado
+                                    ${resultBadge}
+                                    ${log.total_results > 1 ? `<span class="result-count-badge">${log.total_results}</span>` : ''}
+                                </button>
+                            </div>
+                            
+                            <div class="simple-tabs-content">
+                                <div class="simple-tab-panel active" data-panel="command">
+                                    ${commandContent}
+                                </div>
+                                <div class="simple-tab-panel" data-panel="result">
+                                    ${resultContent}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     `;
@@ -304,6 +400,36 @@ function refreshLogs() {
                 </div>
             `;
         });
+}
+
+/**
+ * Alterna entre abas em um sistema de abas específico
+ * @param {string} containerId - ID do contêiner das abas
+ * @param {string} tabName - Nome da aba a ser ativada
+ */
+function switchTab(containerId, tabName) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Remove active class from all tab buttons
+    const tabButtons = container.querySelectorAll('.simple-tab-btn');
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    
+    // Remove active class from all tab panels
+    const tabPanels = container.querySelectorAll('.simple-tab-panel');
+    tabPanels.forEach(panel => panel.classList.remove('active'));
+    
+    // Activate the selected tab button
+    const selectedButton = container.querySelector(`[data-tab="${tabName}"]`);
+    if (selectedButton) {
+        selectedButton.classList.add('active');
+    }
+    
+    // Activate the selected tab panel
+    const selectedPanel = container.querySelector(`[data-panel="${tabName}"]`);
+    if (selectedPanel) {
+        selectedPanel.classList.add('active');
+    }
 }
 
 // Inicialização do histórico de logs quando a página é acessada

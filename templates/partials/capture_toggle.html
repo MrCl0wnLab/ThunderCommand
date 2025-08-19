@@ -1,0 +1,31 @@
+<!-- Result Capture Toggle Component -->
+<div class="capture-toggle-container" id="capture-toggle-container">
+    <div class="capture-toggle-wrapper">
+        <!-- Toggle Switch -->
+        <label class="capture-toggle-switch">
+            <input type="checkbox" 
+                   id="capture-toggle-input" 
+                   {{ 'checked' if capture_enabled else '' }}
+                   hx-post="/admin/toggle_capture"
+                   hx-target="#capture-toggle-container"
+                   hx-swap="outerHTML">
+            <span class="capture-slider"></span>
+        </label>
+        
+        <!-- Status Indicator -->
+        <div class="capture-status-indicator ms-3">
+            <div class="capture-status-text">
+                <span class="capture-status-label {{ 'enabled' if capture_enabled else 'disabled' }}">
+                    {{ 'Ativo' if capture_enabled else 'Inativo' }}
+                </span>
+                <div class="capture-status-icon">
+                    {% if capture_enabled %}
+                        <i class="fas fa-eye text-success"></i>
+                    {% else %}
+                        <i class="fas fa-eye-slash text-muted"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -11,7 +11,16 @@
     
     <!-- Console Content -->
     <div class="console-body">
-        <div id="logs-list">
+        <!-- Loading Indicator - outside of replaced content -->
+        <div id="logs-loading" class="text-center p-4 logs-loading htmx-indicator">
+            <i class="fas fa-circle-notch fa-spin me-2"></i> Carregando logs...
+        </div>
+        
+        <div id="logs-list" 
+             hx-get="/admin/logs" 
+             hx-trigger="load, every 15s"
+             hx-indicator="#logs-loading"
+             hx-swap="innerHTML">
             <p class="text-center p-4 logs-loading">
                 <i class="fas fa-circle-notch fa-spin me-2"></i> Carregando logs...
             </p>
@@ -19,18 +28,3 @@
     </div>
 </div>
 
-<!-- Clientes Alvo -->
-<div class="card mt-4 console-target-card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-users me-2"></i> Cliente Alvo para Execução de Comandos</span>
-        <div>
-            <select id="console-target-client" class="form-select form-select-sm d-inline-block me-2 console-select" style="width: 250px;">
-                <option value="default">Todos os clientes</option>
-                <!-- Opções carregadas dinamicamente -->
-            </select>
-            <button class="console-button theme-dark-red" onclick="refreshClientsForConsole()" title="Atualizar lista de clientes">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
-    </div>
-</div>

@@ -1,0 +1,84 @@
+<!-- Notification and alert components -->
+
+{% macro alert(message, type="info", dismissible=true, id="") %}
+<div class="alert alert-{{ type }}{% if dismissible %} alert-dismissible fade show{% endif %}"
+     {% if id %}id="{{ id }}"{% endif %} role="alert">
+    {% if type == "success" %}
+        <i class="fas fa-check-circle me-2"></i>
+    {% elif type == "danger" %}
+        <i class="fas fa-exclamation-triangle me-2"></i>
+    {% elif type == "warning" %}
+        <i class="fas fa-exclamation-circle me-2"></i>
+    {% else %}
+        <i class="fas fa-info-circle me-2"></i>
+    {% endif %}
+    {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro toast(title, message, type="info", id="toast-notification") %}
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="{{ id }}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            {% if type == "success" %}
+                <i class="fas fa-check-circle text-success me-2"></i>
+            {% elif type == "danger" %}
+                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+            {% elif type == "warning" %}
+                <i class="fas fa-exclamation-circle text-warning me-2"></i>
+            {% else %}
+                <i class="fas fa-info-circle text-info me-2"></i>
+            {% endif %}
+            <strong class="me-auto">{{ title }}</strong>
+            <small class="text-muted">agora</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            {{ message }}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro status_badge(status, text="") %}
+{% if status == "active" or status == "online" %}
+    <span class="badge bg-success">
+        <i class="fas fa-circle me-1"></i>{{ text or "Online" }}
+    </span>
+{% elif status == "inactive" or status == "offline" %}
+    <span class="badge bg-secondary">
+        <i class="fas fa-circle me-1"></i>{{ text or "Offline" }}
+    </span>
+{% elif status == "connecting" %}
+    <span class="badge bg-warning">
+        <i class="fas fa-spinner fa-spin me-1"></i>{{ text or "Conectando" }}
+    </span>
+{% elif status == "error" %}
+    <span class="badge bg-danger">
+        <i class="fas fa-exclamation-triangle me-1"></i>{{ text or "Erro" }}
+    </span>
+{% else %}
+    <span class="badge bg-secondary">
+        <i class="fas fa-question me-1"></i>{{ text or "Desconhecido" }}
+    </span>
+{% endif %}
+{% endmacro %}
+
+{% macro loading_spinner(text="Carregando...", size="sm") %}
+<div class="d-flex align-items-center">
+    <div class="spinner-border spinner-border-{{ size }} me-2" role="status" aria-hidden="true"></div>
+    <span>{{ text }}</span>
+</div>
+{% endmacro %}
+
+{% macro notification_counter(id="notification-count", count=0) %}
+<span class="notification-counter" id="{{ id }}">
+    <i class="fas fa-bell"></i>
+    {% if count > 0 %}
+    <span class="badge bg-danger">{{ count }}</span>
+    {% endif %}
+</span>
+{% endmacro %}

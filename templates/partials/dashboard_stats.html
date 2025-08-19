@@ -1,0 +1,84 @@
+<!-- Dashboard statistics cards that can be refreshed via HTMX -->
+<!-- Total de Clientes -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-primary shadow h-100 py-2 card-modern">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Total de Clientes
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-clients">
+                        {{ stats.total_clients or 0 }}
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-users fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clientes Online -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2 card-modern">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        Clientes Online
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="online-clients">
+                        {{ stats.online_clients or 0 }}
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-wifi fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Conexões Polling -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2 card-modern">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        Conexões Polling
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="polling-clients">
+                        {{ stats.polling_clients or 0 }}
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-sync fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comandos Enviados -->
+<div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2 card-modern">
+        <div class="card-body">
+            <div class="row no-gutters align-items-center">
+                <div class="col mr-2">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        Comandos Enviados
+                    </div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="commands-sent">
+                        {{ stats.commands_sent or 0 }}
+                    </div>
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-terminal fa-2x text-gray-300"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

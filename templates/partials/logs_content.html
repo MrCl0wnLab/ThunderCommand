@@ -1,0 +1,152 @@
+{% from 'components/tabs.html' import simple_tabs %}
+
+{% if logs and logs|length > 0 %}
+    <!-- Sort logs from newest to oldest -->
+    {% set sorted_logs = logs|sort(attribute='timestamp', reverse=true) %}
+    
+    {% for log in sorted_logs %}
+        {% set loop_index = loop.index0 %}
+        
+        <!-- Formatação da data e hora -->
+        {% set date = log.timestamp|replace('T', ' ')|replace('Z', '') %}
+        {% set time_parts = date.split(' ') %}
+        {% set date_str = time_parts[0] if time_parts|length > 0 else 'N/A' %}
+        {% set time_str = time_parts[1].split('.')[0] if time_parts|length > 1 else 'N/A' %}
+        
+        <!-- Ícone com base no tipo de comando -->
+        {% if log.type == 'js' %}
+            {% set type_icon = 'fa-code' %}
+        {% elif log.type == 'html' %}
+            {% set type_icon = 'fa-file-code' %}
+        {% elif log.type == 'manipulate' %}
+            {% set type_icon = 'fa-edit' %}
+        {% elif log.type == 'visibility' %}
+            {% set type_icon = 'fa-eye-slash' %}
+        {% elif log.type == 'head' %}
+            {% set type_icon = 'fa-heading' %}
+        {% else %}
+            {% set type_icon = 'fa-terminal' %}
+        {% endif %}
+        
+        <div class="console-history-entry">
+            <div class="console-history-header">
+                <div class="console-history-timestamp">
+                    <i class="fas fa-calendar-alt me-1"></i> {{ date_str }}
+                    <i class="fas fa-clock ms-3 me-1"></i> {{ time_str }}
+                    <span class="console-history-type {{ log.type }}">
+                        <i class="fas {{ type_icon }} me-1"></i>{{ log.type }}
+                    </span>
+                </div>
+                <div class="console-history-client">
+                    <i class="fas fa-user me-1"></i> Cliente: {{ log.client_id }}
+                </div>
+            </div>
+            
+            <div class="log-entry-tabs" id="log-{{ loop_index }}">
+                <div class="simple-tabs-nav">
+                    <button class="simple-tab-btn active" data-tab="command" onclick="switchTab('log-{{ loop_index }}', 'command')">
+                        <i class="fas fa-code me-1"></i>Comando
+                    </button>
+                    <button class="simple-tab-btn" data-tab="result" onclick="switchTab('log-{{ loop_index }}', 'result')">
+                        <i class="fas fa-play-circle me-1"></i>Resultado
+                        {% if log.overall_status == 'success' %}
+                            <span class="result-status-badge success"><i class="fas fa-check"></i></span>
+                        {% elif log.overall_status == 'error' %}
+                            <span class="result-status-badge error"><i class="fas fa-times"></i></span>
+                        {% elif log.overall_status == 'pending' %}
+                            <span class="result-status-badge pending"><i class="fas fa-clock"></i></span>
+                        {% else %}
+                            <span class="result-status-badge no-response"><i class="fas fa-minus"></i></span>
+                        {% endif %}
+                        {% if log.total_results > 1 %}
+                            <span class="result-count-badge">{{ log.total_results }}</span>
+                        {% endif %}
+                    </button>
+                </div>
+                
+                <div class="simple-tabs-content">
+                    <div class="simple-tab-panel active" data-panel="command">
+                        <div class="command-display">
+                            <pre class="command-code"><code>{{ log.command }}</code></pre>
+                            <div class="command-actions mt-2">
+                                <button class="console-button primary" 
+                                        data-command="{{ log.command|e }}"
+                                        onclick="copyToConsole(this.getAttribute('data-command'))">
+                                    <i class="fas fa-play me-1"></i> Executar
+                                </button>
+                                <button class="console-button" 
+                                        data-command="{{ log.command|e }}"
+                                        onclick="copyToClipboard(this.getAttribute('data-command'))">
+                                    <i class="fas fa-copy me-1"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="simple-tab-panel" data-panel="result">
+                        {% if log.has_results and log.results and log.results|length > 0 %}
+                            <div class="results-display">
+                                <div class="results-summary">
+                                    <span class="total-results">{{ log.total_results }} execução(ões)</span>
+                                    {% if log.success_count > 0 %}
+                                        <span class="success-count"><i class="fas fa-check"></i> {{ log.success_count }}</span>
+                                    {% endif %}
+                                    {% if log.error_count > 0 %}
+                                        <span class="error-count"><i class="fas fa-times"></i> {{ log.error_count }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="results-list">
+                                    {% for result in log.results %}
+                                        <div class="result-item {% if not result.success %}error{% endif %}">
+                                            <div class="result-header">
+                                                <span class="result-status">
+                                                    <i class="fas {% if result.success %}fa-check-circle text-success{% else %}fa-times-circle text-danger{% endif %}"></i>
+                                                    {{ 'Sucesso' if result.success else 'Erro' }}
+                                                </span>
+                                                {% if result.result_type %}
+                                                    <span class="result-type-badge badge bg-info">{{ result.result_type }}</span>
+                                                {% endif %}
+                                                <span class="result-time">
+                                                    {% if result.timestamp %}
+                                                        {% set result_time = result.timestamp.split('T')[1].split('.')[0] if 'T' in result.timestamp else result.timestamp %}
+                                                        <i class="fas fa-clock me-1"></i>{{ result_time }}
+                                                    {% else %}
+                                                        <i class="fas fa-clock me-1"></i>N/A
+                                                    {% endif %}
+                                                </span>
+                                                {% if result.execution_time %}
+                                                    <span class="execution-time">
+                                                        <i class="fas fa-stopwatch me-1"></i>{{ result.execution_time }}ms
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="result-content">
+                                                <code class="{% if result.success %}result-success{% else %}result-error{% endif %}">
+                                                    {{ result.result or ('undefined' if result.success else 'Erro desconhecido') }}
+                                                </code>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="no-result">
+                                <div class="no-result-content">
+                                    <i class="fas fa-hourglass-half text-muted me-2"></i>
+                                    <span class="text-muted">Aguardando resultado da execução...</span>
+                                </div>
+                                <small class="text-muted">
+                                    O resultado aparecerá aqui quando o comando for executado no cliente.
+                                </small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="console-output p-4 text-center">
+        <i class="fas fa-info-circle me-2"></i>
+        <span>Nenhum histórico de comando encontrado.</span>
+    </div>
+{% endif %}

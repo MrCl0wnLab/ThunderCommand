@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+{% extends "base.html" %}
+{% from 'components/notifications.html' import status_badge, loading_spinner %}
 
-<head>
-   
-    {% include 'partials/head.html' %}
+{% block head_scripts %}
 
     <style>
         :root {
@@ -356,9 +354,9 @@
             }
         }
     </style>
-</head>
+{% endblock %}
 
-<body>
+{% block body_content %}
     <!-- Partículas de fundo -->
     <div class="particles" id="particles"></div>
 
@@ -470,7 +468,9 @@
         4. Atualizar o status da conexão
     -->
     <script src="http://127.0.0.1:5000/1/cmd.js"></script>
-    
+{% endblock %}
+
+{% block scripts %}
     <!-- Script para efeitos visuais -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -551,5 +551,4 @@
         });
     </script>
     
-</body>
-</html>
+{% endblock %}

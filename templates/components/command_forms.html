@@ -1,0 +1,95 @@
+<!-- Command form components for different command types -->
+{% from 'components/buttons.html' import primary_button, clear_button %}
+
+{% macro command_control_panel() %}
+<!-- Command Control Panel -->
+<div class="card mb-4">
+    <div class="card-header">
+        Painel de Controle
+    </div>
+    <div class="card-body">
+        <div class="form-group mb-4">
+            <label for="target-client" class="form-label">Cliente alvo:</label>
+            <select id="target-client" class="form-select">
+                <option value="default">Todos os clientes</option>
+                <!-- Os clientes serão carregados dinamicamente -->
+            </select>
+        </div>
+        
+        {{ client_info_section() }}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro client_info_section() %}
+<!-- Seção de Informações do Cliente -->
+<div id="client-info-section" class="mb-4 d-none">
+    <div class="card border-accent card-green">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-info-circle me-2 text-accent"></i>
+                <span>Informações do Cliente Selecionado</span>
+            </div>
+            <div class="client-status-badge" id="client-status-badge">
+                <span class="badge bg-secondary">Status Desconhecido</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Content will be populated by JavaScript -->
+            <div id="client-info-content">
+                <!-- Client information will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro command_form(form_id, title, description) %}
+<div class="command-form-card">
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-terminal me-2"></i>
+                <span>{{ title }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">{{ description }}</p>
+            <form id="{{ form_id }}" class="command-form">
+                {{ caller() }}
+                <div class="d-flex gap-2 mt-3">
+                    {{ primary_button("Executar", type="submit", icon="fas fa-play") }}
+                    {{ clear_button("Limpar", onclick="clearForm('" + form_id + "')") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro text_input(id, label, placeholder="", required=false, rows=3) %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">{{ label }}{% if required %} *{% endif %}</label>
+    {% if rows > 1 %}
+    <textarea id="{{ id }}" name="{{ id }}" class="form-control" 
+              placeholder="{{ placeholder }}" rows="{{ rows }}"
+              {% if required %}required{% endif %}></textarea>
+    {% else %}
+    <input type="text" id="{{ id }}" name="{{ id }}" class="form-control" 
+           placeholder="{{ placeholder }}"
+           {% if required %}required{% endif %}>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro select_input(id, label, options, required=false) %}
+<div class="mb-3">
+    <label for="{{ id }}" class="form-label">{{ label }}{% if required %} *{% endif %}</label>
+    <select id="{{ id }}" name="{{ id }}" class="form-select"
+            {% if required %}required{% endif %}>
+        {% for value, text in options %}
+        <option value="{{ value }}">{{ text }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endmacro %}

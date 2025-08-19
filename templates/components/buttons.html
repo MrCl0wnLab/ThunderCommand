@@ -1,0 +1,43 @@
+<!-- Button component macros for reusable UI elements -->
+
+{% macro refresh_button(onclick_func="", text="Atualizar", icon="fas fa-sync-alt", classes="btn btn-outline-danger logs-refresh-button") %}
+<button class="{{ classes }}" onclick="{{ onclick_func }}">
+    <i class="{{ icon }}"></i> {{ text }}
+</button>
+{% endmacro %}
+
+{% macro primary_button(text, onclick="", type="button", icon="", classes="btn btn-primary", id="", disabled=false) %}
+<button type="{{ type }}" 
+        class="{{ classes }}"
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if disabled %}disabled{% endif %}>
+    {% if icon %}<i class="{{ icon }}"></i> {% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+{% macro danger_button(text, onclick="", type="button", icon="fas fa-trash", classes="btn btn-danger", id="", disabled=false) %}
+<button type="{{ type }}" 
+        class="{{ classes }}"
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if disabled %}disabled{% endif %}>
+    {% if icon %}<i class="{{ icon }}"></i> {% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+{% macro success_button(text, onclick="", type="button", icon="fas fa-check", classes="btn btn-success", id="", disabled=false) %}
+<button type="{{ type }}" 
+        class="{{ classes }}"
+        {% if onclick %}onclick="{{ onclick }}"{% endif %}
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if disabled %}disabled{% endif %}>
+    {% if icon %}<i class="{{ icon }}"></i> {% endif %}{{ text }}
+</button>
+{% endmacro %}
+
+{% macro clear_button(text="Limpar", icon="fas fa-times", onclick="", classes="btn btn-sm btn-outline-danger") %}
+<button class="{{ classes }}" {% if onclick %}onclick="{{ onclick }}"{% endif %}>
+    <i class="{{ icon }}"></i> {{ text }}
+</button>
+{% endmacro %}

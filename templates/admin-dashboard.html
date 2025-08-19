@@ -1,34 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
+{% extends "admin_base.html" %}
 
-    {% include 'partials/head.html' %}
-    <!-- Socket.IO client -->
-    <script src="/static/js/socket.io.min.js"></script>
-    <!-- Parser de User Agent -->
-    <script src="/static/js/user-agent-parser.js"></script>
-    <!-- Ícones de navegador e sistema operacional -->
-    <script src="/static/js/browser-os-icons.js"></script>
-    <!-- jQuery -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <!-- Chart JS via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- Table Interactions JS -->
-    <script src="/static/js/table-interactions.js"></script>
-    <!-- Table Pagination JS -->
-    <script src="/static/js/table-pagination.js"></script>
-    <!-- Console Terminal JS -->
-    <script src="/static/js/console-terminal.js"></script>
-    <!-- Correções consolidadas para tabelas -->
-    <script src="/static/js/table-fixes-consolidated.js"></script>
+{% from 'components/buttons.html' import refresh_button, primary_button, danger_button %}
+{% from 'components/client_cards.html' import connection_badge %}
+{% from 'components/notifications.html' import status_badge %}
 
-</head>
-<body>
-    {% include 'partials/sidebar.html' %}
-    {% include 'partials/header.html' %}
-
-    <!-- Main Content -->
-    <div class="main-content" id="main-content">
+{% block main_content %}
         <!-- Dashboard Section -->
         <div class="content-page active" id="dashboard-page">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -43,14 +19,98 @@
                         <i class="far fa-clock"></i>
                         <span id="current-time">00:00:00</span>
                     </div>
-                    <button class="btn btn-outline-danger logs-refresh-button" onclick="refreshDashboard()">
-                        <i class="fas fa-sync-alt"></i> Atualizar
+                    {{ refresh_button(onclick_func="refreshDashboard()") }}
+                    <button class="btn btn-outline-success ms-2" 
+                            hx-get="/admin/stats" 
+                            hx-target="#stats-container" 
+                            hx-trigger="click"
+                            title="Forçar atualização das estatísticas">
+                        <i class="fas fa-sync-alt"></i> <span class="d-none d-md-inline">Atualizar Stats</span>
                     </button>
                 </div>
             </div>
 
-            {% include 'partials/card_stats.html' %}
-            {% include 'partials/clients_table.html' %}
+            <!-- Stats Row with HTMX Auto-refresh -->
+            <div class="stats-section">
+                <!-- Loading indicator - stays outside of replaced content -->
+                <div id="stats-loading" class="htmx-indicator text-center py-3">
+                    <i class="fas fa-sync fa-spin text-primary"></i>
+                    <span class="ms-2 text-muted">Atualizando estatísticas...</span>
+                </div>
+                
+                <div class="row" 
+                     id="stats-container"
+                     hx-get="/admin/stats" 
+                     hx-trigger="load, every 10s" 
+                     hx-target="this"
+                     hx-swap="innerHTML"
+                     hx-indicator="#stats-loading">
+                    <!-- Initial loading placeholder -->
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando estatísticas...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Carregando estatísticas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="row">
+                <!-- Connection Types Chart -->
+                <div class="col-xl-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            Tipos de Conexão
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="connectionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Client Activity Chart -->
+                <div class="col-xl-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            Atividade de Clientes (últimas 24h)
+                        </div>
+                        <div class="card-body chart-container">
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Clients Table -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Clientes Conectados</span>
+                    <a href="#clients" class="btn btn-outline-danger btn-sm" data-page="clients" onclick="refreshClientsTables(); return false;">
+                        Ver todos <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sortable table-dark" id="dashboard-clients-table">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>ID do Cliente</th>
+                                    <th>Última Atividade</th>
+                                    <th>IP</th>
+                                    <th>Browser</th>
+                                    <th>OS</th>
+                                    <th>Conexão</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Preenchido dinamicamente via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Clients Section (placeholder to fix missing element error) -->
@@ -66,9 +126,7 @@
                     <div class="alert alert-dark">
                         <i class="fas fa-user-circle me-2"></i>
                         Cliente selecionado: <strong id="selected-client-id">Nenhum</strong>
-                        <button class="btn btn-sm btn-outline-danger ms-3" id="clear-selection">
-                            <i class="fas fa-times"></i> Limpar
-                        </button>
+                        {{ danger_button("Limpar", onclick="clearClientSelection()", icon="fas fa-times", classes="btn btn-sm btn-outline-danger ms-3", id="clear-selection") }}
                     </div>
                 </div>
             </div>
@@ -80,25 +138,15 @@
         <div class="content-page" id="logs-page">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2 class="mb-0"><i class="fas fa-table-list me-2"></i>Logs</h2>
-                <button class="btn btn-outline-danger logs-refresh-button" onclick="refreshLogs()">
-                    <i class="fas fa-sync-alt"></i> Atualizar
-                </button>
+                {{ refresh_button(onclick_func="refreshLogs()") }}
             </div>
             
             {% include 'partials/logs_table.html' %}
         </div>
-    </div>
+{% endblock %}
 
-    
-    
-    <!-- O resto do seu JavaScript permanece aqui -->
+{% block scripts %}
     <script>
-        // Helper function to escape HTML - prevents XSS in preview
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
 
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
@@ -215,115 +263,41 @@
             refreshDashboard();
         });
         
-        // WebSocket Connection for Admin
-        let socket = null;
-        
-        function initWebSocket() {
-            try {
-                // Initialize Socket.IO
-                socket = io();
-                
-                // Connect event
-                socket.on('connect', function() {
-                    console.log('Admin connected via WebSocket');
-                    document.getElementById('notification-count').textContent = '0';
-                    
-                    // Admin joins admin room
-                    socket.emit('join_admin');
-                });
-                
-                // Admin join confirmation
-                socket.on('admin_joined', function(data) {
-                    if (data.success) {
-                        console.log('Admin joined admin room');
-                    } else {
-                        console.error('Error joining admin room:', data.error);
-                    }
-                });
-                
-                // Real-time client updates
-                socket.on('client_update', function(data) {
-                    console.log('Real-time client update:', data);
-                    
-                    // Increment notification counter
-                    const notificationCount = document.getElementById('notification-count');
-                    notificationCount.textContent = parseInt(notificationCount.textContent) + 1;
-                    
-                    // Highlight client with activity if we have the TableUtils available
-                    if (window.TableUtils && data.client_id) {
-                        window.TableUtils.highlightClientActivity(data.client_id);
-                    }
-                    
-                    // Show notification toast with neon effect
-                    showNeonToast(`Cliente ${data.client_id.substring(0, 8)}... atualizado`, 'info');
-                    
-                    // Update clients list if on clients page
-                    if (document.getElementById('clients-page').classList.contains('active')) {
-                        refreshClients();
-                    }
-                    
-                    // Update dashboard if on dashboard page
-                    if (document.getElementById('dashboard-page').classList.contains('active')) {
-                        refreshDashboard();
-                    }
-                });
-                
-                // Disconnect event
-                socket.on('disconnect', function() {
-                    console.log('Admin disconnected from WebSocket');
-                });
-                
-                // Reconnect event
-                socket.on('reconnect', function() {
-                    console.log('Admin reconnected via WebSocket');
-                    socket.emit('join_admin');
-                });
-            } catch (e) {
-                console.error('Error initializing WebSocket:', e);
-            }
-        }
+        // WebSocket functionality removed - using HTTP polling only
 
         // Dashboard functions
         function refreshDashboard() {
-            // Refresh client stats and table
-            fetchClientStats();
+            // Refresh client table - stats are now handled by HTMX auto-refresh
             fetchDashboardClients();
             
-            // Reset notification counter
-            document.getElementById('notification-count').textContent = '0';
+            // Update charts with current data
+            fetchClientStats();
+            
+            // Notification counter functionality removed with WebSocket
         }
         
         function fetchClientStats() {
+            // Fetch current client data and update charts
             fetch('/admin/clients')
                 .then(response => response.json())
                 .then(data => {
                     if (data.clients) {
                         const totalClients = data.clients.length;
                         const onlineClients = data.clients.filter(client => client.active).length;
-                        const websocketClients = data.clients.filter(client => client.websocket).length;
+                        const pollingClients = data.clients.filter(client => client.active).length;
                         
-                        document.getElementById('total-clients').textContent = totalClients;
-                        document.getElementById('online-clients').textContent = onlineClients;
-                        document.getElementById('websocket-clients').textContent = websocketClients;
+                        // Update connection type chart - WebSocket count removed
+                        updateConnectionChart(0, pollingClients, totalClients - onlineClients);
                         
-                        // Update connection type chart
-                        updateConnectionChart(websocketClients, onlineClients - websocketClients, totalClients - onlineClients);
+                        // Update activity chart with current data
+                        updateClientActivityChart();
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching client stats:', error);
-                });
-                
-            // Fetch logs to get command count
-            fetch('/admin/logs')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.logs) {
-                        document.getElementById('total-commands').textContent = data.logs.length;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching logs:', error);
+                    // Show charts with sample data even if fetch fails
+                    updateConnectionChart(0, 0, 0);
+                    updateClientActivityChart();
                 });
         }
         
@@ -344,10 +318,10 @@
                         const displayClients = data.clients.slice(0, 5);
                         
                         const clientsHtml = displayClients.map(client => `
-                            <tr class="${client.active ? (client.websocket ? 'table-primary' : '') : 'table-secondary'}" 
+                            <tr class="${client.active ? '' : 'table-secondary'}" 
                                 data-client-id="${client.id}" 
                                 data-client-status="${client.active ? 'online' : 'offline'}"
-                                data-client-connection="${client.websocket ? 'websocket' : 'polling'}">
+                                data-client-connection="polling">
                                 <td class="status-cell">
                                     <div class="status-tooltip" title="Última atividade: ${new Date(client.last_seen).toLocaleString()}">
                                         <span class="client-status ${client.active ? 'status-online' : 'status-offline'}"></span>
@@ -372,9 +346,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    ${client.websocket 
-                                        ? '<span class="btn btn-sm badge-websocket"><i class="fas fa-bolt me-1"></i>WebSocket</span>' 
-                                        : '<span class="btn btn-sm badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>'}
+                                    <span class="btn btn-sm badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
@@ -404,7 +376,8 @@
         }
         
         // Charts
-        function updateConnectionChart(websocket, polling, offline) {
+        function updateConnectionChart(websocketCount, polling, offline) {
+            // WebSocket support removed - all clients use polling now
             const ctx = document.getElementById('connectionChart');
             if (!ctx) {
                 console.error("Chart canvas element 'connectionChart' not found");
@@ -421,12 +394,11 @@
                 window.connectionChart = new Chart(ctx, {
                     type: 'doughnut',
                     data: {
-                        labels: ['WebSocket', 'Polling', 'Offline'],
+                        labels: ['Polling', 'Offline'],
                         datasets: [{
-                            data: [websocket, polling, offline],
+                            data: [polling, offline],
                             backgroundColor: [
-                                '#ffc107',  // Primary (WebSocket)
-                                '#007bff',  // Warning (Polling)
+                                '#007bff',  // Primary (Polling)
                                 '#6c757d'   // Secondary (Offline)
                             ],
                             borderWidth: 0
@@ -445,24 +417,35 @@
                         }
                     }
                 });
-                
-                // Create client activity chart
-                updateClientActivityChart();
             } catch (error) {
                 console.error("Error creating connection chart:", error);
             }
         }
         
-        function updateClientActivityChart() {
+        function updateClientActivityChart(activityData = null) {
             const ctx = document.getElementById('activityChart');
             if (!ctx) {
                 console.error("Chart canvas element 'activityChart' not found");
                 return;
             }
              try {
-                // Generate sample data - in a real implementation this would come from the server
+                // Use real data if provided, otherwise generate sample data
                 const hours = [...Array(24).keys()].map(i => `${i}h`);
-                const activity = [...Array(24).keys()].map(() => Math.floor(Math.random() * 10));
+                let activity;
+                
+                if (activityData && Array.isArray(activityData)) {
+                    activity = activityData;
+                } else {
+                    // Fallback to sample data showing realistic activity pattern
+                    activity = [...Array(24).keys()].map(i => {
+                        // Simulate realistic activity: higher during day hours (8-20), lower at night
+                        if (i >= 8 && i <= 20) {
+                            return Math.floor(Math.random() * 5) + 2; // 2-6 active clients
+                        } else {
+                            return Math.floor(Math.random() * 3); // 0-2 active clients
+                        }
+                    });
+                }
                 
                 // Destroy existing chart if it exists
                 if (window.activityChart && typeof window.activityChart.destroy === 'function') {
@@ -609,11 +592,8 @@
                             refreshLogs();
                         }
                         
-                        // Update command count on dashboard
-                        if (document.getElementById('dashboard-page').classList.contains('active')) {
-                            const commandCount = document.getElementById('total-commands');
-                            commandCount.textContent = parseInt(commandCount.textContent) + 1;
-                        }
+                        // Note: Command count is now auto-updated via HTMX every 10 seconds
+                        // Manual update removed to avoid conflicts with auto-refresh
                     } else {
                         throw new Error(data.error || "Erro no servidor ao processar comando");
                     }
@@ -628,100 +608,6 @@
             }
         }
         
-        function previewCommand(type) {
-            const previewPanel = document.getElementById('preview-panel');
-            const previewContent = document.getElementById('preview-content');
-            
-            try {
-                let content = '';
-                
-                switch(type) {
-                    case 'js':
-                        const jsCode = document.getElementById('js-command').value;
-                        if (!jsCode.trim()) throw new Error("Nenhum código para visualizar");
-                        content = `<pre class="m-0">${escapeHtml(jsCode)}</pre>`;
-                        break;
-                        
-                    case 'html':
-                        const htmlCode = document.getElementById('html-content').value;
-                        if (!htmlCode.trim()) throw new Error("Nenhum HTML para visualizar");
-                        content = `
-                            <div>
-                                <div class="mb-3">
-                                    <strong><i class="fas fa-code me-1"></i>Código HTML:</strong>
-                                    <pre class="mt-2">${escapeHtml(htmlCode)}</pre>
-                                </div>
-                                <div>
-                                    <strong><i class="fas fa-eye me-1"></i>Visualização:</strong>
-                                    <div class="preview-render p-3 border mt-2">${htmlCode}</div>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'manipulate':
-                        const targetElement = document.getElementById('target-element').value;
-                        const actionType = document.getElementById('action-type').value;
-                        const manipContent = document.getElementById('manipulation-content').value;
-                        
-                        if (!targetElement.trim() || !manipContent.trim()) {
-                            throw new Error("ID do elemento e conteúdo são obrigatórios");
-                        }
-                        
-                        content = `
-                            <div>
-                                <div class="mb-3">
-                                    <strong><i class="fas fa-crosshairs me-1"></i>Elemento alvo:</strong> 
-                                    <code class="ms-2">#${escapeHtml(targetElement)}</code>
-                                </div>
-                                <div class="mb-3">
-                                    <strong><i class="fas fa-tools me-1"></i>Ação:</strong>
-                                    <span class="ms-2">${actionType}</span>
-                                </div>
-                                <div class="mb-3">
-                                    <strong><i class="fas fa-edit me-1"></i>Conteúdo:</strong>
-                                    <pre class="mt-2">${escapeHtml(manipContent)}</pre>
-                                </div>
-                                <div>
-                                    <strong><i class="fas fa-eye me-1"></i>Visualização:</strong>
-                                    <div class="preview-render p-3 border mt-2">${manipContent}</div>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                        
-                    case 'head':
-                        const headAction = document.getElementById('head-action').value;
-                        const headContent = document.getElementById('head-content').value;
-                        
-                        if (!headContent.trim()) {
-                            throw new Error("Conteúdo é obrigatório");
-                        }
-                        
-                        content = `
-                            <div>
-                                <div class="mb-3">
-                                    <strong><i class="fas fa-code me-1"></i>Tipo:</strong> 
-                                    <span class="ms-2">${headAction}</span>
-                                </div>
-                                <div>
-                                    <strong><i class="fas fa-file-code me-1"></i>Conteúdo:</strong>
-                                    <pre class="mt-2">${escapeHtml(headContent)}</pre>
-                                </div>
-                            </div>
-                        `;
-                        break;
-                }
-                
-                previewContent.innerHTML = content;
-                previewPanel.style.display = 'block';
-                
-                // Scroll to preview
-                previewPanel.scrollIntoView({behavior: "smooth"});
-            } catch (error) {
-                alert("Erro de preview: " + error.message);
-            }
-        }
 
         // Client functions
         function refreshClients() {
@@ -743,7 +629,7 @@
                     }
                     
                     // Counts for stats display
-                    let websocketCount = 0;
+                    // WebSocket count removed - all clients use polling
                     let pollingCount = 0;
                     let clientRowsHtml = [];
                     
@@ -756,16 +642,16 @@
                         
                         // Generate HTML for all client rows
                         data.clients.forEach(client => {
-                            // Update counts
+                            // Update counts - WebSocket support removed
                             if (client.active) {
-                                client.websocket ? websocketCount++ : pollingCount++;
+                                pollingCount++;
                             }
                             
                             const rowHtml = `
-                                <tr class="${client.active ? (client.websocket ? 'table-primary' : '') : 'table-secondary'}" 
+                                <tr class="${client.active ? '' : 'table-secondary'}" 
                                     data-client-id="${client.id}" 
                                     data-client-status="${client.active ? 'online' : 'offline'}"
-                                    data-client-connection="${client.websocket ? 'websocket' : 'polling'}"
+                                    data-client-connection="polling"
                                     data-last-seen="${client.last_seen}">
                                     <td>
                                         <div class="status-tooltip" title="Última atividade: ${new Date(client.last_seen).toLocaleString()}">
@@ -791,9 +677,7 @@
                                         </div>
                                     </td>
                                     <td>
-                                        ${client.websocket 
-                                            ? '<span class="badge badge-websocket"><i class="fas fa-bolt me-1"></i>WebSocket</span>' 
-                                            : '<span class="badge badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>'}
+                                        <span class="badge badge-polling"><i class="fas fa-sync me-1"></i>Polling</span>
                                     </td>
                                     <td>
                                         <div class="d-flex gap-2">
@@ -839,15 +723,13 @@
                             tableBody.innerHTML = clientRowsHtml.join('');
                         }
                         
-                        // Update stats display com verificações para elementos que podem não existir
-                        const websocketCountEl = document.getElementById('websocket-count');
+                        // Update stats display - WebSocket counter removed
                         const pollingCountEl = document.getElementById('polling-count');
                         
-                        if (websocketCountEl) websocketCountEl.textContent = websocketCount;
                         if (pollingCountEl) pollingCountEl.textContent = pollingCount;
                         
                         // Adiciona efeito de atualização aos contadores
-                        ['websocket-count', 'polling-count'].forEach(id => {
+                        ['polling-count'].forEach(id => {
                             const counter = document.getElementById(id);
                             if (!counter) return;
                             
@@ -866,10 +748,8 @@
                     } else {
                         tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Nenhum cliente encontrado.</td></tr>';
                         
-                        const websocketCountEl = document.getElementById('websocket-count');
                         const pollingCountEl = document.getElementById('polling-count');
                         
-                        if (websocketCountEl) websocketCountEl.textContent = '0';
                         if (pollingCountEl) pollingCountEl.textContent = '0';
                     }
                 })
@@ -911,8 +791,7 @@
                     option.value = client.id;
                     
                     const status = client.active ? 'online' : 'offline';
-                    const connection = client.websocket ? '⚡' : '';
-                    option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status}) ${connection}`;
+                    option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status})`;
                     
                     if (!client.active) {
                         option.disabled = true;
@@ -998,12 +877,8 @@
                             // Limpa as tags existentes
                             techTags.innerHTML = '';
                             
-                            // Adiciona as novas tags
-                            if (client.websocket) {
-                                techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-bolt"></i> WebSocket</span>`;
-                            } else {
-                                techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-sync"></i> Polling</span>`;
-                            }
+                            // Connection type tags - WebSocket support removed, all clients use polling
+                            techTags.innerHTML += `<span class="tech-badge"><i class="fas fa-sync"></i> Polling</span>`;
                             
                             // Adiciona o navegador
                             if (parsedUA.browser) {
@@ -1019,7 +894,7 @@
                         safeUpdateText('info-client-ip', client.ip || 'N/A');
                         safeUpdateText('info-client-last-activity', 
                             client.last_activity ? new Date(client.last_activity).toLocaleString() : 'N/A');
-                        safeUpdateText('info-client-connection', client.websocket ? 'WebSocket ⚡' : 'Polling');
+                        safeUpdateText('info-client-connection', 'Polling');
                         
                         // Detalhes de plataforma (navegador e sistema operacional)
                         const userAgent = client.user_agent || 'N/A';
@@ -1071,8 +946,7 @@
                                 const option = document.createElement('option');
                                 option.value = client.id;
                                 const status = client.active ? 'online' : 'offline';
-                                const connection = client.websocket ? '⚡' : '';
-                                option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status}) ${connection}`;
+                                option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status})`;
                                 dropdown.appendChild(option);
                                 dropdown.value = clientId;
                             }
@@ -1199,10 +1073,8 @@
                     fetchDashboardClients();
                 }
                 
-                // Atualiza os contadores e estatísticas, se a função existir
-                if (typeof fetchClientStats === 'function') {
-                    fetchClientStats();
-                }
+                // Note: Stats are now auto-updated via HTMX every 10 seconds
+                // fetchClientStats() call removed to avoid conflicts with HTMX auto-refresh
                 
                 // Atualiza também os logs que podem conter informações dos clientes
                 // Somente se a função refreshLogs existir e se estivermos na página de logs
@@ -1284,6 +1156,15 @@
             // Atualizar dados iniciais
             refreshDashboard();
             
+            // Configurar atualização periódica dos gráficos (a cada 30 segundos)
+            setInterval(function() {
+                // Só atualizar se estivermos na aba dashboard
+                const dashboardPage = document.getElementById('dashboard-page');
+                if (dashboardPage && dashboardPage.classList.contains('active')) {
+                    fetchClientStats();
+                }
+            }, 30000);
+            
             // Adicionar efeitos de hover aos cards de estatísticas
             const statsCards = document.querySelectorAll('.stats-card');
             if (statsCards) {
@@ -1305,5 +1186,4 @@
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}

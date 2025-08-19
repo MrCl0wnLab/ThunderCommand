@@ -1,0 +1,139 @@
+<!-- Tab system components for organizing content -->
+
+{% macro tab_container(id, tabs, active_tab=0) %}
+<div class="log-tabs-container" id="{{ id }}">
+    <!-- Tab Navigation -->
+    <ul class="log-tabs-nav" role="tablist">
+        {% for tab in tabs %}
+        <li class="log-tab-item" role="presentation">
+            <button class="log-tab-link {% if loop.index0 == active_tab %}active{% endif %}"
+                    id="{{ id }}-tab-{{ loop.index0 }}"
+                    data-bs-toggle="tab" 
+                    data-bs-target="#{{ id }}-content-{{ loop.index0 }}"
+                    type="button" 
+                    role="tab"
+                    aria-controls="{{ id }}-content-{{ loop.index0 }}"
+                    aria-selected="{% if loop.index0 == active_tab %}true{% else %}false{% endif %}">
+                {% if tab.icon %}<i class="{{ tab.icon }} me-1"></i>{% endif %}
+                {{ tab.title }}
+                {% if tab.badge %}
+                <span class="tab-badge {{ tab.badge_class or 'bg-secondary' }}">{{ tab.badge }}</span>
+                {% endif %}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+    
+    <!-- Tab Content -->
+    <div class="log-tabs-content">
+        {% for tab in tabs %}
+        <div class="log-tab-pane {% if loop.index0 == active_tab %}show active{% endif %}"
+             id="{{ id }}-content-{{ loop.index0 }}"
+             role="tabpanel"
+             aria-labelledby="{{ id }}-tab-{{ loop.index0 }}">
+            {{ tab.content | safe }}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endmacro %}
+
+{% macro simple_tabs(id, command_content, result_content, result_status="no_response", result_count=0) %}
+<div class="log-entry-tabs" id="{{ id }}">
+    <!-- Simple Tab Navigation -->
+    <div class="simple-tabs-nav">
+        <button class="simple-tab-btn active" data-tab="command">
+            <i class="fas fa-code me-1"></i>Comando
+        </button>
+        <button class="simple-tab-btn" data-tab="result">
+            <i class="fas fa-play-circle me-1"></i>Resultado
+            {% if result_status == 'success' %}
+            <span class="result-status-badge success"><i class="fas fa-check"></i></span>
+            {% elif result_status == 'error' %}
+            <span class="result-status-badge error"><i class="fas fa-times"></i></span>
+            {% elif result_status == 'pending' %}
+            <span class="result-status-badge pending"><i class="fas fa-clock"></i></span>
+            {% else %}
+            <span class="result-status-badge no-response"><i class="fas fa-minus"></i></span>
+            {% endif %}
+            {% if result_count > 1 %}
+            <span class="result-count-badge">{{ result_count }}</span>
+            {% endif %}
+        </button>
+    </div>
+    
+    <!-- Simple Tab Content -->
+    <div class="simple-tabs-content">
+        <div class="simple-tab-panel active" data-panel="command">
+            {{ command_content | safe }}
+        </div>
+        <div class="simple-tab-panel" data-panel="result">
+            {{ result_content | safe }}
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro result_display(results, overall_status="no_response") %}
+{% if results and results|length > 0 %}
+    <div class="result-summary">
+        <div class="result-header">
+            <span class="result-status {{ overall_status }}">
+                {% if overall_status == 'success' %}
+                    <i class="fas fa-check-circle text-success"></i> Executado com sucesso
+                {% elif overall_status == 'error' %}
+                    <i class="fas fa-exclamation-triangle text-danger"></i> Erro na execução
+                {% elif overall_status == 'pending' %}
+                    <i class="fas fa-clock text-warning"></i> Execução pendente
+                {% endif %}
+            </span>
+            {% if results|length > 1 %}
+            <span class="result-count">{{ results|length }} execuções</span>
+            {% endif %}
+        </div>
+        
+        <div class="result-details">
+            {% for result in results %}
+            <div class="result-item {% if not result.success %}error{% endif %}">
+                <div class="result-item-header">
+                    <span class="result-timestamp">
+                        {% if result.timestamp %}
+                        <i class="fas fa-clock me-1"></i>
+                        {{ result.timestamp | format_datetime if result.timestamp else 'N/A' }}
+                        {% endif %}
+                    </span>
+                    {% if result.execution_time %}
+                    <span class="execution-time">
+                        <i class="fas fa-stopwatch me-1"></i>{{ result.execution_time }}ms
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="result-content">
+                    {% if result.success %}
+                        <div class="result-value success">
+                            <strong>Resultado:</strong> 
+                            <code>{{ result.result | truncate(200) if result.result else 'undefined' }}</code>
+                        </div>
+                    {% else %}
+                        <div class="result-value error">
+                            <strong>Erro:</strong> 
+                            <code class="error-message">{{ result.result | truncate(200) if result.result else 'Erro desconhecido' }}</code>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    <div class="no-result">
+        <div class="no-result-content">
+            <i class="fas fa-hourglass-half text-muted me-2"></i>
+            <span class="text-muted">Aguardando resultado da execução...</span>
+        </div>
+        <small class="text-muted">
+            O resultado aparecerá aqui quando o comando for executado no cliente.
+        </small>
+    </div>
+{% endif %}
+{% endmacro %}

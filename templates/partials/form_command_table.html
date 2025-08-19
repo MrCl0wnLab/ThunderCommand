@@ -12,6 +12,26 @@
             </select>
         </div>
 
+        <!-- Result Capture Toggle -->
+        <div class="form-group mb-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="capture-setting-info">
+                    <label class="form-label mb-1">Captura de Resultados:</label>
+                    <small class="text-muted d-block">Capturar e exibir resultados dos comandos executados</small>
+                </div>
+                <div class="capture-toggle-container" id="capture-toggle-container"
+                     hx-get="/admin/capture_status" 
+                     hx-trigger="load" 
+                     hx-swap="outerHTML">
+                    <!-- Toggle will be loaded here -->
+                    <div class="capture-loading">
+                        <i class="fas fa-sync fa-spin text-accent"></i>
+                        <span class="ms-2">Carregando...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Seção de Informações do Cliente -->
         <div id="client-info-section" class="mb-4 d-none">
             <div class="card border-accent card-green">
@@ -139,9 +159,6 @@
                     <label for="js-command" class="form-label">Inject JavaScript:</label>
                     <textarea id="js-command" class="form-control code-editor" placeholder="Digite o código JavaScript aqui..."></textarea>
                     <div class="d-flex justify-content-end mt-3">
-                        <button onclick="previewCommand('js')" class="btn btn-outline-danger me-2">
-                            <i class="fas fa-eye"></i> Preview
-                        </button>
                         <button onclick="sendCommand('js')" class="btn btn-accent">
                             <i class="fas fa-play"></i> Executar JS
                         </button>
@@ -155,9 +172,6 @@
                     <label for="html-content" class="form-label">Inject HTML:</label>
                     <textarea id="html-content" class="form-control code-editor" placeholder="Digite o HTML a ser injetado..."></textarea>
                     <div class="d-flex justify-content-end mt-3">
-                        <button onclick="previewCommand('html')" class="btn btn-outline-danger me-2">
-                            <i class="fas fa-eye"></i> Preview
-                        </button>
                         <button onclick="sendCommand('html')" class="btn btn-accent">
                             <i class="fas fa-code"></i> Inject HTML
                         </button>
@@ -187,9 +201,6 @@
                     <textarea id="manipulation-content" class="form-control code-editor" placeholder="Conteúdo a ser manipulado..."></textarea>
                 </div>
                 <div class="d-flex justify-content-end">
-                    <button onclick="previewCommand('manipulate')" class="btn btn-outline-danger me-2">
-                        <i class="fas fa-eye"></i> Preview
-                    </button>
                     <button onclick="sendCommand('manipulate')" class="btn btn-accent">
                         <i class="fas fa-edit"></i> Aplicar Manipulação
                     </button>
@@ -234,9 +245,6 @@
                     <textarea id="head-content" class="form-control code-editor" placeholder="URL ou conteúdo inline..."></textarea>
                 </div>
                 <div class="d-flex justify-content-end">
-                    <button onclick="previewCommand('head')" class="btn btn-outline-danger me-2">
-                        <i class="fas fa-eye"></i> Preview
-                    </button>
                     <button onclick="sendCommand('head')" class="btn btn-accent">
                         <i class="fas fa-heading"></i> Adicionar ao Head
                     </button>
@@ -250,11 +258,6 @@
             <div id="command-result-content" class="command-result-container"></div>
         </div>
 
-        <!-- Preview Panel -->
-        <div id="preview-panel" class="mt-4">
-            <h4><i class="fas fa-eye me-2"></i>Preview</h4>
-            <div id="preview-content" class="preview-container"></div>
-        </div>
         
         <!-- Status -->
         <div id="status" class="mt-4">Pronto para enviar comandos</div>
