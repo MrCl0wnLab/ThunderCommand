@@ -66,97 +66,83 @@ O sistema utiliza **exclusivamente HTTP polling** para comunicação entre servi
 
 ```mermaid
 graph TB
-    %% Main Components
-    Admin[Admin Dashboard] 
-    Server[Flask Server - HTTP Polling Only]
-    Clients[Client Browsers]
-    DB[SQLite Database]
-    
-    %% Subcomponents
-    subgraph "Admin Panel (HTMX)"
-        AdminLogin[Login Authentication]
-        AdminDashboard[Dashboard with HTMX]
-        CommandBuilder[Command Builder Interface]
-        ClientMonitor[Real-time Client Monitor]
-        CommandLogs[Command History & Results]
-        StatsCharts[Charts.js Metrics]
-    end
-    
-    subgraph "Server Components (Flask)"
-        HTTPPolling[HTTP Polling Manager]
-        AuthModule[Session Authentication]
-        CommandStorage[Command Repository]
-        ClientRegistry[Client Repository]
-        ResultCapture[Result Capture System]
-        LoggingSystem[Multi-level Logging]
-    end
-    
-    subgraph "Database Layer (SQLite)"
-        ClientTable[clients table]
-        CommandTable[commands table] 
-        ResultsTable[command_results table]
-    end
-    
-    subgraph "Client Components"
-        PollingClient[HTTP Polling Client]
-        CommandExecutor[Smart JS Executor]
-        ClientIdentifier[Client ID Generator/Storage]
-        SafeDOM[Safe DOM Manipulation]
-        ResultSender[Result Sender (JSONP)]
-    end
-    
-    %% Authentication Flow
-    AdminLogin -->|Credentials| AuthModule
-    AuthModule -->|Session Token| AdminDashboard
-    
-    %% Command Flow (HTTP Polling)
-    CommandBuilder -->|Creates Command| CommandStorage
-    CommandStorage -->|Stores in DB| ClientTable
-    CommandStorage -->|Caches Command| Server
-    Server -->|Serves on Poll| HTTPPolling
-    HTTPPolling -->|Command Response| PollingClient
-    PollingClient -->|Execute| CommandExecutor
-    
-    %% Database Operations
-    CommandStorage <-->|Read/Write| CommandTable
-    ClientRegistry <-->|Read/Write| ClientTable
-    ResultCapture <-->|Store Results| ResultsTable
-    
-    %% Client Management Flow
-    Clients -->|Register/Heartbeat| ClientRegistry
-    ClientRegistry -->|Updates Dashboard| ClientMonitor
-    ClientIdentifier -->|Persistent ID| ClientRegistry
-    
-    %% Safe Command Execution
-    CommandExecutor -->|Multi-Strategy Selection| SafeDOM
-    SafeDOM -->|JS Execution| JSExec[JavaScript Execution]
-    SafeDOM -->|DOM Manipulation| DOMManip[Safe DOM Manipulation]
-    SafeDOM -->|HTML Injection| HTMLInject[HTML Injection]
-    SafeDOM -->|Element Visibility| Visibility[Visibility Control]
-    
-    %% Result Flow
-    CommandExecutor -->|Send Results| ResultSender
-    ResultSender -->|POST/JSONP| ResultCapture
-    ResultCapture -->|Store & Log| LoggingSystem
-    ResultCapture -->|Update Dashboard| StatsCharts
-    
-    %% HTMX Updates
-    AdminDashboard -->|Partial Updates| StatsCharts
-    AdminDashboard -->|Real-time Data| ClientMonitor
-    AdminDashboard -->|Log Updates| CommandLogs
-    
-    %% Styling
-    classDef adminNode fill:#722F37,stroke:#722F37,color:#fff
-    classDef serverNode fill:#1A1A2E,stroke:#16213E,color:#fff
-    classDef clientNode fill:#0F3460,stroke:#0F3460,color:#fff
-    classDef dbNode fill:#2D5AA0,stroke:#2D5AA0,color:#fff
-    classDef execNode fill:#950740,stroke:#950740,color:#fff
-    
-    class Admin,AdminLogin,AdminDashboard,CommandBuilder,ClientMonitor,CommandLogs,StatsCharts adminNode
-    class Server,HTTPPolling,AuthModule,CommandStorage,ClientRegistry,ResultCapture,LoggingSystem serverNode
-    class Clients,PollingClient,CommandExecutor,ClientIdentifier,SafeDOM,ResultSender clientNode
-    class DB,ClientTable,CommandTable,ResultsTable dbNode
-    class JSExec,DOMManip,HTMLInject,Visibility execNode
+  %% Painel Administrativo
+  Admin[Admin Dashboard]
+  CommandBuilder[Command Builder]
+  ClientMonitor[Client Monitor]
+  CommandLogs[Command Logs]
+  StatsCharts[Stats & Charts]
+
+  %% Backend / Servidor
+  Server[Flask Server - HTTP Polling]
+  AuthModule[Auth Module]
+  CommandStorage[Command Storage]
+  ClientRegistry[Client Registry]
+  ResultCapture[Result Capture]
+  LoggingSystem[Logging System]
+
+  %% Banco de Dados
+  DB[SQLite DB]
+  ClientTable[(Clients Table)]
+  CommandTable[(Commands Table)]
+  ResultsTable[(Results Table)]
+
+  %% Cliente
+  Clients[Client Browsers]
+  PollingClient[HTTP Polling Client]
+  CommandExecutor[Command Executor]
+  ClientIdentifier[Client ID Storage]
+  SafeDOM[Safe DOM Manipulation]
+  ResultSender[Result Sender]
+
+  %% Fluxo de Autenticação
+  AdminLogin[Login]
+  AdminLogin -->|Credentials| AuthModule
+  AuthModule -->|Session| Admin
+
+  %% Fluxo de Comandos
+  CommandBuilder -->|Cria Comando| CommandStorage
+  CommandStorage -->|Armazena| CommandTable
+  CommandStorage -->|Envia Comando| Server
+  Server -->|Resposta Polling| PollingClient
+  PollingClient -->|Executa| CommandExecutor
+
+  %% Banco de Dados
+  ClientRegistry <--> ClientTable
+  CommandStorage <--> CommandTable
+  ResultCapture <--> ResultsTable
+
+  %% Gerenciamento Cliente
+  Clients -->|Registro & Heartbeat| ClientRegistry
+  ClientRegistry -->|Atualiza| ClientMonitor
+  ClientIdentifier -->|ID Persistente| ClientRegistry
+
+  %% Execução Segura
+  CommandExecutor -->|DOM/JS/HTML| SafeDOM
+  SafeDOM -->|Manipulação DOM| CommandExecutor
+  SafeDOM -->|Injeção HTML| CommandExecutor
+
+  %% Envio de Resultados
+  CommandExecutor -->|Envia Resultados| ResultSender
+  ResultSender -->|POST/JSONP| ResultCapture
+  ResultCapture -->|Armazena| LoggingSystem
+  ResultCapture -->|Atualiza| StatsCharts
+
+  %% HTMX Atualizações
+  Admin -->|Atualizações Parciais| StatsCharts
+  Admin -->|Dados Reais| ClientMonitor
+  Admin -->|Atualiza Logs| CommandLogs
+
+  %% Classes de Nós (Estilos simplificados)
+  classDef admin color:#fff,fill:#800026
+  classDef server color:#fff,fill:#1C2238
+  classDef db color:#fff,fill:#286090
+  classDef client color:#fff,fill:#3258a8
+
+  class Admin,CommandBuilder,ClientMonitor,CommandLogs,StatsCharts admin
+  class Server,AuthModule,CommandStorage,ClientRegistry,ResultCapture,LoggingSystem server
+  class DB,ClientTable,CommandTable,ResultsTable db
+  class Clients,PollingClient,CommandExecutor,ClientIdentifier,SafeDOM,ResultSender client
 ```
 
 ## Estrutura do Projeto (v2.0)
