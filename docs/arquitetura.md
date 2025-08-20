@@ -1,4 +1,4 @@
-# Arquitetura Thunder Command v2.0
+# Arquitetura Thunder Command v2.2
 
 <h1 align="center">
   <img src="../static/img/logo.png"   width="200">
@@ -6,31 +6,20 @@
 
 ## Visão Geral da Arquitetura
 
-O Thunder Command v2.0 implementa uma **arquitetura híbrida** que oferece flexibilidade entre compatibilidade legada e padrões modernos de desenvolvimento Flask.
+O Thunder Command v2.2 implementa uma **arquitetura simplificada** focada em facilidade de uso e manutenção, consolidando toda a funcionalidade em um único arquivo principal.
 
-## Padrões de Deployment
+## Execução do Servidor
 
-### 1. Servidor Legado (`app.py`)
+### Servidor Principal (`app.py`)
 - **Arquivo único** com todas as rotas e lógica de negócio
-- **Compatibilidade total** com versões anteriores
-- **Deploy simples** para ambientes de produção básicos
-- **Ideal para**: Início rápido, testes, ambientes simples
+- **Deploy simples** para qualquer ambiente
+- **Fácil manutenção** e compreensão
+- **Ideal para**: Todos os casos de uso, desenvolvimento e produção
 
 ```bash
 python app.py
-```
-
-### 2. Application Factory (`run.py` + `app/`)
-- **Padrão moderno Flask** com blueprints organizados
-- **Separação de responsabilidades** clara
-- **Configurações por ambiente** (development/production)
-- **Escalabilidade** e manutenibilidade aprimoradas
-- **Ideal para**: Desenvolvimento colaborativo, produção robusta
-
-```bash
-python run.py
-# ou
-FLASK_ENV=development python run.py
+# ou modo desenvolvimento
+FLASK_ENV=development python app.py
 ```
 
 ## Componentes Principais
@@ -59,23 +48,12 @@ core/
     └── helpers.py           # Utilitários auxiliares
 ```
 
-#### Camada de Aplicação (Moderna)
-```
-app/
-├── __init__.py              # Application factory
-├── api/
-│   ├── admin.py            # Rotas administrativas
-│   ├── client.py           # Gerenciamento de clientes
-│   └── command.py          # Execução de comandos
-├── auth/
-│   └── routes.py           # Autenticação e autorização
-├── models/
-│   ├── client.py           # Modelos de dados de cliente
-│   └── command.py          # Modelos de dados de comando
-└── services/
-    ├── client_manager.py    # Lógica de negócio de clientes
-    └── command_executor.py  # Processamento de comandos
-```
+#### Aplicação Principal (`app.py`)
+- **Arquivo único** contendo todas as rotas e lógica
+- **Sistema de autenticação** integrado
+- **Gerenciamento de clientes** e comandos
+- **API REST** completa para comunicação
+- **Templates** e recursos estáticos organizados
 
 ### Frontend - Dashboard Administrativo
 
@@ -187,38 +165,35 @@ logs/
 
 **Nota**: O arquivo `websocket.log` foi removido na v2.1 com a eliminação completa do suporte WebSocket/Socket.IO.
 
-## Configuração por Ambiente
+## Configuração
 
-### Development
-```python
-# config/development.py
-DEBUG = True
-TESTING = True
-SECRET_KEY = 'dev-secret-key'
+### Variáveis de Ambiente
+```bash
+# Configurações opcionais via ambiente
+export SECRET_KEY="sua_chave_secreta"
+export ADMIN_USERNAME="seu_usuario"
+export ADMIN_PASSWORD="sua_senha"
+export FLASK_ENV="development"  # ou "production"
 ```
 
-### Production
-```python
-# config/production.py
-DEBUG = False
-TESTING = False
-SECRET_KEY = os.environ.get('SECRET_KEY')
-```
+### Configuração no Código
+- **Credenciais padrão**: `tandera`/`tandera`
+- **Debug mode**: Ativado automaticamente com `FLASK_ENV=development`
+- **Polling interval**: 5 segundos (configurável no código)
 
 ## Sistema de Build Frontend
 
 ### Desenvolvimento
 ```bash
 npm install              # Instalar dependências
-npm run dev             # Modo desenvolvimento
+npm run dev             # Modo desenvolvimento (python app.py)
 npm run lint            # Verificar código
 npm test                # Executar testes
 ```
 
 ### Produção
 ```bash
-npm start               # Build de produção
-npm run build           # Build otimizado
+npm start               # Executar servidor (python app.py)
 ```
 
 ## Segurança e Autenticação
@@ -252,27 +227,17 @@ PORT="5000"
 ## Extensibilidade
 
 ### Adicionando Novos Tipos de Comando
-1. **Server-side**: Atualizar `app/services/command_executor.py` ou `app.py`
-2. **Client-side**: Modificar `payload/cmd.js`
+1. **Server-side**: Atualizar `app.py` (função de geração de comandos)
+2. **Client-side**: Modificar `payload/cmd.js` (método `executeCommand`)
 3. **UI**: Adicionar em `templates/partials/form_command_table.html`
 4. **Testes**: Criar em `tests/unit/` e `tests/integration/`
 
-### Novos Blueprints
+### Novas Rotas
 ```python
-# app/api/new_feature.py
-from flask import Blueprint
-
-bp = Blueprint('new_feature', __name__)
-
-@bp.route('/new-endpoint')
-def new_endpoint():
-    return {'status': 'success'}
-```
-
-```python
-# app/__init__.py
-from app.api import new_feature
-app.register_blueprint(new_feature.bp, url_prefix='/api')
+# Adicionar diretamente no app.py
+@app.route('/nova-rota')
+def nova_funcionalidade():
+    return jsonify({'status': 'success'})
 ```
 
 ## Performance e Otimização
@@ -290,15 +255,15 @@ app.register_blueprint(new_feature.bp, url_prefix='/api')
 ## Troubleshooting Arquitetural
 
 ### Problemas Comuns
-1. **Dual server conflict**: Não execute `app.py` e `run.py` simultaneamente
-2. **Port binding**: Verifique se porta 5000 está disponível
-3. **Database locks**: SQLite não suporta escritas concorrentes extremas
-4. **Memory leaks**: Monitore crescimento de cache de clientes
+1. **Port binding**: Verifique se porta 5000 está disponível
+2. **Database locks**: SQLite não suporta escritas concorrentes extremas
+3. **Memory leaks**: Monitore crescimento de cache de clientes
+4. **Template errors**: Verifique se todos os templates estão no diretório `templates/`
 
 ### Debugging
 ```bash
 # Logs detalhados
-FLASK_ENV=development python run.py
+FLASK_ENV=development python app.py
 
 # Database inspection
 sqlite3 thunder_command.db
@@ -308,4 +273,4 @@ SELECT * FROM clients;
 
 ---
 
-Esta arquitetura oferece flexibilidade, escalabilidade e manutenibilidade, permitindo que o Thunder Command evolua conforme as necessidades do projeto.
+Esta arquitetura simplificada oferece facilidade de uso, manutenibilidade e clareza, permitindo que o Thunder Command seja facilmente compreendido e modificado por desenvolvedores de qualquer nível.

@@ -1,10 +1,10 @@
 {
   "name": "thunder-command",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Sistema de controle remoto para páginas web",
   "scripts": {
-    "start": "python run.py",
-    "dev": "FLASK_ENV=development python run.py",
+    "start": "python app.py",
+    "dev": "FLASK_ENV=development python app.py",
     "test": "pytest",
     "lint": "eslint static/js/**/*.js"
   },

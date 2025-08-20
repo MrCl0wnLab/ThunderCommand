@@ -1,4 +1,4 @@
-# 📑 Documentação Thunder Command v2.1+
+# 📑 Documentação Thunder Command v2.2+
 
 <h1 align="center">
   <img src="../static/img/logo.png"   width="200">
@@ -14,10 +14,10 @@
 ### 🛠️ **Para Desenvolvedores**
 
 #### 🏗️ **[Arquitetura do Sistema](./arquitetura.md)**
-> Documentação técnica completa da **arquitetura híbrida v2.0**. Explica os dois padrões de deployment (legado `app.py` vs moderno `run.py`), fluxo de comunicação HTTP polling, correção do bug HTML injection, sistema de repositórios SQLite, estrutura HTMX + Bootstrap, e diagramas de sequência. Essencial para entender o design interno do sistema.
+> Documentação técnica completa da **arquitetura simplificada v2.2**. Explica o sistema unificado (`app.py`), fluxo de comunicação HTTP polling, sistema de repositórios SQLite, estrutura HTMX + Bootstrap, e configuração simplificada. Essencial para entender o design interno do sistema.
 
 #### 💻 **[Guia de Desenvolvimento](./desenvolvimento.md)**
-> Manual prático para desenvolvedores contribuindo com o projeto. Inclui setup do ambiente, estrutura de código moderno vs legado, comandos de desenvolvimento (Python + npm), padrões para adicionar novas funcionalidades, debugging, testes (pytest), Git workflow, e monitoramento de performance. Complementa o `CLAUDE.md` com instruções hands-on.
+> Manual prático para desenvolvedores contribuindo com o projeto. Inclui setup do ambiente, estrutura de código simplificada, comandos de desenvolvimento (Python + npm), padrões para adicionar novas funcionalidades, debugging, testes (pytest), Git workflow, e monitoramento de performance. Complementa o `CLAUDE.md` com instruções hands-on.
 
 ### 📋 **Documentação Complementar**
 
@@ -29,9 +29,16 @@
 
 ---
 
-## 🆕 **Novidades v2.1.0**
+## 🆕 **Novidades v2.2.0**
 
-### 🔥 **Limpeza Completa WebSocket/Socket.IO**
+### 🔥 **Simplificação Arquitetural**
+- **Arquitetura unificada**: Consolidação completa em `app.py` único
+- **Remoção da complexidade**: Eliminados `run.py`, diretório `app/`, diretório `config/`
+- **Deploy simplificado**: Apenas `python app.py` para todos os ambientes
+- **Manutenção facilitada**: Código mais direto e fácil de compreender
+- **Funcionalidades preservadas**: Todas as features mantidas intactas
+
+### ✅ **Histórico - v2.1.0: Limpeza WebSocket/Socket.IO**
 - **Remoção total**: Eliminados todos os vestígios de Socket.IO/WebSocket do código
 - **Endpoints removidos**: `/socket.io/` routes completamente removidos
 - **Database cleanup**: Tabela `socket_clients` removida do schema
@@ -43,8 +50,8 @@
 - **Solução**: Cliente agora executa JavaScript corretamente para comandos HTML
 - **Impacto**: Interface mais limpa e funcionamento adequado
 
-### 🏗️ **Arquitetura Moderna**
-- **Dual deployment**: Servidor legado (`app.py`) + moderno (`run.py`)
+### 🏗️ **Arquitetura Simplificada**
+- **Deploy unificado**: Sistema principal (`app.py`) único
 - **Frontend modular**: npm + webpack + HTMX + Bootstrap 5.3.0
 - **Testes**: Framework pytest implementado
 - **HTTP Polling**: Exclusivo, sistema puramente polling
@@ -75,7 +82,7 @@
 |-------------------|-----------|-------|
 | Como usar comando HTML | [Painel de Controle](./Introdução-Painel-de-Controle.md) | 2.2. HTML |
 | Correção bug HTML | [Painel de Controle](./Introdução-Painel-de-Controle.md) | Solução de Problemas |
-| Dual server setup | [Arquitetura](./arquitetura.md) | Padrões de Deployment |
+| Execução do servidor | [Arquitetura](./arquitetura.md) | Execução do Servidor |
 | Adicionar novo comando | [Desenvolvimento](./desenvolvimento.md) | 1. Novo Tipo de Comando |
 | Comandos npm/pytest | [Desenvolvimento](./desenvolvimento.md) | Comandos de Desenvolvimento |
 | Estrutura de pastas | [Arquitetura](./arquitetura.md) | Componentes Principais |

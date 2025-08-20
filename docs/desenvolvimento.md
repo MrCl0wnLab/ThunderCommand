@@ -45,14 +45,11 @@ export FLASK_ENV="development"
 ### Primeira Execução
 
 ```bash
-# Opção A - Servidor moderno (recomendado para desenvolvimento)
-python run.py
-
-# Opção B - Servidor legado (para testes de compatibilidade)
+# Servidor principal
 python app.py
 
-# Opção C - Modo desenvolvimento com auto-reload
-FLASK_ENV=development python run.py
+# Modo desenvolvimento com auto-reload
+FLASK_ENV=development python app.py
 ```
 
 Acesse: `http://localhost:5000/admin` (credenciais: `tandera`/`tandera`)
@@ -61,34 +58,19 @@ Acesse: `http://localhost:5000/admin` (credenciais: `tandera`/`tandera`)
 
 ### Workflow Recomendado
 
-1. **Feature Development**: Use `run.py` + estrutura `app/`
-2. **Legacy Testing**: Teste com `app.py` para compatibilidade
-3. **Frontend**: Use `npm run dev` para desenvolvimento com hot-reload
-4. **Testing**: Execute testes antes de commits
+1. **Development**: Use `python app.py` para desenvolvimento
+2. **Frontend**: Use `npm run dev` para desenvolvimento com hot-reload  
+3. **Testing**: Execute testes antes de commits
+4. **Production**: Deploy simples com `python app.py`
 
 ### Organização de Código
 
-#### Backend Moderno (`app/`)
-```
-app/
-├── __init__.py              # Application factory
-├── api/                     # Blueprints organizados por domínio
-│   ├── __init__.py
-│   ├── admin.py            # Rotas administrativas
-│   ├── client.py           # Gerenciamento de clientes
-│   └── command.py          # Execução de comandos
-├── auth/                    # Módulo de autenticação
-│   ├── __init__.py
-│   └── routes.py           # Login/logout
-├── models/                  # Modelos de dados
-│   ├── __init__.py
-│   ├── client.py           # Entidades de cliente
-│   └── command.py          # Entidades de comando
-└── services/                # Lógica de negócio
-    ├── __init__.py
-    ├── client_manager.py    # Gerenciamento de clientes
-    └── command_executor.py  # Processamento de comandos
-```
+#### Aplicação Principal (`app.py`)
+- **Arquivo único** contendo toda a lógica da aplicação
+- **Rotas organizadas** por funcionalidade
+- **Autenticação integrada** 
+- **Gerenciamento completo** de clientes e comandos
+- **API REST** para comunicação com clientes
 
 #### Core Modules (`core/`)
 ```
@@ -131,7 +113,7 @@ templates/
 ### Python/Backend
 ```bash
 # Executar com auto-reload
-FLASK_ENV=development python run.py
+FLASK_ENV=development python app.py
 
 # Limpar banco de dados
 python clear_db.py
@@ -177,42 +159,22 @@ SELECT * FROM commands WHERE type = 'html';
 cp thunder_command.db backup_$(date +%Y%m%d_%H%M%S).db
 
 # Reset completo
-rm -f thunder_command.db && python run.py
+rm -f thunder_command.db && python app.py
 ```
 
 ## Adicionando Novas Funcionalidades
 
 ### 1. Novo Tipo de Comando
 
-#### Backend (Application Factory)
+#### Backend (`app.py`)
 ```python
-# app/services/command_executor.py
-def execute_new_command_type(self, command_data):
-    """Processar novo tipo de comando"""
-    try:
-        # Lógica específica do comando
-        result = self.process_new_logic(command_data)
-        return {'success': True, 'result': result}
-    except Exception as e:
-        return {'success': False, 'error': str(e)}
-
-# app/api/command.py
-@bp.route('/set_command', methods=['POST'])
-def set_command():
-    # ... código existente ...
-    elif command_type == 'new_type':
-        js_command = generate_new_command(content, target_id)
-    # ... resto do código ...
-```
-
-#### Backend (Legacy - para compatibilidade)
-```python
-# app.py (linha ~280)
+# No app.py, encontrar a função de geração de comandos (~linha 280)
 elif command_type == 'new_type':
     # Gerar JavaScript para o novo comando
     js_command = f"""
         // Implementação do novo comando
-        console.log('Executing new command type');
+        console.log('Executing new command type: {content}');
+        // Adicionar lógica específica aqui
     """
 ```
 
@@ -257,15 +219,10 @@ executeNewType(commandData) {
 
 ### 2. Nova Rota API
 
-#### Criar Blueprint
+#### Adicionar Nova Rota
 ```python
-# app/api/new_feature.py
-from flask import Blueprint, request, jsonify
-from app.services.client_manager import ClientManager
-
-bp = Blueprint('new_feature', __name__)
-
-@bp.route('/new-endpoint', methods=['GET', 'POST'])
+# No app.py, adicionar nova rota
+@app.route('/api/new-endpoint', methods=['GET', 'POST'])
 def new_endpoint():
     """Nova funcionalidade"""
     if request.method == 'POST':
@@ -275,30 +232,15 @@ def new_endpoint():
     
     return jsonify({'status': 'ready'})
 
-@bp.route('/new-endpoint/<int:client_id>', methods=['DELETE'])
+@app.route('/api/new-endpoint/<int:client_id>', methods=['DELETE'])
 def delete_client_data(client_id):
     """Deletar dados específicos do cliente"""
     try:
-        # Lógica de deleção
+        # Lógica de deleção usando os repositórios existentes
+        client_repo.delete_client(client_id)
         return jsonify({'status': 'deleted'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-```
-
-#### Registrar Blueprint
-```python
-# app/__init__.py
-from app.api import new_feature
-
-def create_app():
-    app = Flask(__name__)
-    
-    # ... configurações existentes ...
-    
-    # Registrar novo blueprint
-    app.register_blueprint(new_feature.bp, url_prefix='/api/new')
-    
-    return app
 ```
 
 ### 3. Novo Componente Frontend
@@ -409,15 +351,14 @@ curl http://localhost:5000/command?client_id=test
 tail -f logs/app.log
 ```
 
-#### 3. Conflito de Servidores
-**Problema**: `app.py` e `run.py` rodando simultaneamente
+#### 3. Porta Ocupada
+**Problema**: Porta 5000 já está em uso
 **Solução**: 
 ```bash
-# Verificar processos
-ps aux | grep python
-# Matar processos conflitantes
+# Verificar processos na porta 5000
+lsof -i :5000
+# Matar processo específico
 pkill -f "python app.py"
-pkill -f "python run.py"
 ```
 
 ## Testes
@@ -470,22 +411,24 @@ class TestNewFeature:
 ```python
 # tests/integration/test_new_routes.py
 import pytest
-from app import create_app
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app import app
 
 @pytest.fixture
 def client():
-    app = create_app()
     app.config['TESTING'] = True
     with app.test_client() as client:
         yield client
 
 def test_new_endpoint(client):
     # Test GET
-    response = client.get('/api/new/endpoint')
+    response = client.get('/api/new-endpoint')
     assert response.status_code == 200
     
     # Test POST
-    response = client.post('/api/new/endpoint', 
+    response = client.post('/api/new-endpoint', 
                           json={'test': 'data'})
     assert response.status_code == 200
     data = response.get_json()

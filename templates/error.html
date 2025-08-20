@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Erro {{ error.code }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card mt-5">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Erro {{ error.code }}
+                    </h4>
+                </div>
+                <div class="card-body text-center">
+                    <div class="error-icon mb-4">
+                        <i class="fas fa-times-circle text-danger" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="card-title">{{ error.name if error.name else "Erro" }}</h5>
+                    <p class="card-text text-muted">
+                        {{ error.description if error.description else "Ocorreu um erro inesperado." }}
+                    </p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-home"></i>
+                            Voltar ao Início
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Voltar
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-muted text-center">
+                    <small>Thunder Command - Sistema de Controle Remoto</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-redirect após 30 segundos para errors 404
+    {% if error.code == 404 %}
+    setTimeout(function() {
+        window.location.href = "{{ url_for('index') }}";
+    }, 30000);
+    {% endif %}
+});
+</script>
+{% endblock %}

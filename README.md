@@ -149,20 +149,12 @@ graph TB
 
 ```
 ThunderCommand/
-├── app.py                                # Servidor Flask legado - HTTP polling only (compatibilidade)
-├── run.py                                # Servidor moderno - Application factory pattern 
+├── app.py                                # Servidor Flask principal - HTTP polling only
+# run.py removido - arquitetura simplificada 
 ├── CLAUDE.md                             # Documentação técnica para desenvolvimento
 ├── package.json                          # Configuração npm e scripts frontend
 ├── requirements.txt                      # Dependências Python
-├── app/                                  # Aplicação Flask moderna (application factory)
-│   ├── __init__.py                       # Factory e configuração de blueprints
-│   ├── api/                              # Rotas API organizadas por domínio
-│   ├── auth/                             # Módulo de autenticação
-│   ├── models/                           # Modelos de dados
-│   └── services/                         # Lógica de negócio
-├── config/                               # Configurações por ambiente
-│   ├── development.py                    # Configurações de desenvolvimento
-│   └── production.py                     # Configurações de produção
+# Arquitetura simplificada - app.py único
 ├── core/                                 # Módulos principais do sistema
 │   ├── database/                         # Camada de persistência SQLite
 │   │   ├── connection.py                 # Conexão e schema do banco
@@ -237,21 +229,15 @@ pip install -r requirements.txt
 npm install
 ```
 
-4. **Execute o servidor** (escolha uma opção):
+4. **Execute o servidor**:
 
-**Opção A - Servidor legado (compatibilidade)**:
 ```bash
 python app.py
 ```
 
-**Opção B - Servidor moderno (recomendado)**:
+**Modo desenvolvimento**:
 ```bash
-python run.py
-```
-
-**Opção C - Modo desenvolvimento**:
-```bash
-FLASK_ENV=development python run.py
+FLASK_ENV=development python app.py
 # ou
 npm run dev
 ```
@@ -269,7 +255,7 @@ Para melhorar a segurança, você pode configurar as credenciais de administrado
 export SECRET_KEY="sua_key"
 export ADMIN_USERNAME="seu_usuario_admin"
 export ADMIN_PASSWORD="sua_senha_admin"
-python run.py
+python app.py
 ```
 
 ### Comandos de Desenvolvimento
@@ -392,20 +378,14 @@ O sistema irá:
 
 ## Arquitetura Técnica (v2.0)
 
-### Backend - Arquitetura Híbrida
+### Backend - Arquitetura Simplificada
 
-**Opção 1 - Servidor Legado (`app.py`)**:
+**Servidor Principal (`app.py`)**:
 - Arquivo único com todas as rotas e lógica de negócio
-- Compatibilidade com versões anteriores
-- Ideal para deploy simples e quick start
+- Deploy simples e direto
+- Fácil manutenção e compreensão
 
-**Opção 2 - Application Factory (`run.py` + `app/`)**:
-- Padrão moderno Flask com blueprints organizados
-- Separação clara entre domínios (API, Auth, Models, Services)
-- Configurações por ambiente (development/production)
-- Escalabilidade e manutenibilidade aprimoradas
-
-**Características Comuns**:
+**Características**:
 - **Comunicação exclusiva via HTTP polling** - sem dependências WebSocket
 - **Persistência SQLite** com padrão Repository para clientes e comandos
 - **API REST em Flask** com endpoints para polling, resultados e administração
@@ -501,7 +481,15 @@ Contribuições de qualquer tipo são bem-vindas!
 
 ---
 
-### Changelog v2.1
+### Changelog v2.2
+
+#### v2.2.0 (Agosto 2025) - Simplificação Arquitetural
+- **🔥 SIMPLIFICAÇÃO TOTAL**: Remoção da arquitetura híbrida, consolidação em `app.py` único
+- **Arquivos removidos**: `run.py`, diretório `app/` (application factory), diretório `config/`
+- **Scripts atualizados**: package.json agora usa apenas `python app.py`
+- **Documentação simplificada**: Guias e instruções focados em uma única forma de execução
+- **Manutenibilidade**: Redução da complexidade, mais fácil para novos desenvolvedores
+- **Funcionalidades mantidas**: Todas as funcionalidades core preservadas
 
 #### v2.1.0 (Agosto 2025) - Limpeza Completa WebSocket/Socket.IO
 - **🔥 REMOÇÃO TOTAL**: Eliminação completa de todas as referências e vestígios de Socket.IO/WebSocket
@@ -519,7 +507,7 @@ Contribuições de qualquer tipo são bem-vindas!
 
 #### v2.0.0 (Agosto 2025) - Lançamento Principal
 - **Principais mudanças**: Migração completa para HTTP polling, remoção do WebSocket, persistência SQLite, HTMX
-- **Arquitetura moderna**: Suporte a application factory pattern (`run.py` + `app/`)
+- **Arquitetura**: Sistema Flask unificado (`app.py`)
 - **Frontend**: Sistema de build npm/webpack, componentes modulares
 - **Testes**: Framework pytest implementado
 - **Compatibilidade**: Quebra compatibilidade com versões anteriores que dependiam de Socket.IO
