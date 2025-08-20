@@ -185,6 +185,8 @@ logs/
 └── auth.log            # Eventos de autenticação
 ```
 
+**Nota**: O arquivo `websocket.log` foi removido na v2.1 com a eliminação completa do suporte WebSocket/Socket.IO.
+
 ## Configuração por Ambiente
 
 ### Development

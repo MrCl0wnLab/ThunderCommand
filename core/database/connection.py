@@ -132,7 +132,6 @@ def init_db():
     - clients: Armazena informações dos clientes conectados
     - commands: Registra comandos enviados aos clientes
     - command_results: Armazena resultados da execução dos comandos
-    - socket_clients: Mantém registro das conexões WebSocket ativas
     
     Também cria índices para otimizar consultas frequentes.
     
@@ -183,14 +182,7 @@ def init_db():
             FOREIGN KEY (client_id) REFERENCES clients (id)
         )""")
         
-        # Create socket_clients table
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS socket_clients (
-            client_id TEXT PRIMARY KEY,
-            session_id TEXT NOT NULL,
-            connected_at TEXT NOT NULL,
-            FOREIGN KEY (client_id) REFERENCES clients (id)
-        )""")
+# socket_clients table removed - no longer using WebSocket/Socket.IO
         
         # Create indices for performance
         cursor.execute('CREATE INDEX IF NOT EXISTS idx_commands_client ON commands(client_id)')

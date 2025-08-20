@@ -501,7 +501,16 @@ Contribuições de qualquer tipo são bem-vindas!
 
 ---
 
-### Changelog v2.0
+### Changelog v2.1
+
+#### v2.1.0 (Agosto 2025) - Limpeza Completa WebSocket/Socket.IO
+- **🔥 REMOÇÃO TOTAL**: Eliminação completa de todas as referências e vestígios de Socket.IO/WebSocket
+- **Endpoints removidos**: `/socket.io/` routes completamente removidos (não retornam mais HTTP 410)
+- **Database schema**: Tabela `socket_clients` removida do schema de inicialização
+- **Client-side cleanup**: Todas as referencias WebSocket removidas dos templates e JavaScript
+- **CSS cleanup**: Estilos `.badge-websocket` removidos, interface 100% polling
+- **Logging cleanup**: `websocket_logger` e `log_websocket_event()` removidos
+- **Impacto**: Sistema agora é puramente HTTP polling sem código legado
 
 #### v2.0.1 (Agosto 2025) - Patch Crítico
 - **🔧 CORREÇÃO CRÍTICA**: Bug de injeção HTML onde wrapper JavaScript aparecia visível na página

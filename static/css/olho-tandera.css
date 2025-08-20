@@ -544,17 +544,8 @@ body {
 }
 
 /* Badge styles modernos */
-.badge-websocket {
-  background-color: #ffc107;
-  color: #000000;
-  transition: all 0.3s ease;
-}
+/* WebSocket badge removed - HTTP polling only */
 
-.badge-websocket:hover {
-  background-color: #e0aa0b;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(224, 170, 11, 0.3);
-}
 
 .badge-polling {
   background-color: #0d6efd;
@@ -711,7 +702,6 @@ body {
   width: 60px;
 }
 
-#dashboard-clients-table .badge-websocket,
 #dashboard-clients-table .badge-polling {
   border-radius: 20px;
   padding: 4px 10px;
@@ -719,10 +709,7 @@ body {
   font-weight: 500;
 }
 
-#dashboard-clients-table .badge-websocket {
-  background: linear-gradient(45deg, #ffee00, #ccff00);
-  color: #051d38;
-}
+/* WebSocket styles removed - HTTP polling only */
 
 #dashboard-clients-table .badge-polling {
   background: linear-gradient(45deg, #0088e3, #0b60a1);

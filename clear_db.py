@@ -24,8 +24,7 @@ def clear_database():
         print("Removendo dados da tabela commands...")
         cursor.execute("DELETE FROM commands")
         
-        print("Removendo dados da tabela socket_clients...")
-        cursor.execute("DELETE FROM socket_clients")
+        # socket_clients table removed - HTTP polling only
         
         print("Removendo dados da tabela clients...")
         cursor.execute("DELETE FROM clients")

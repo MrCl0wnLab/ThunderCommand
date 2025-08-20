@@ -230,59 +230,14 @@ class ClientRepository:
         """Remove um cliente e seus dados relacionados."""
         with get_db() as conn:
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM socket_clients WHERE client_id = ?', (client_id,))
+# socket_clients table removed - HTTP polling only
             cursor.execute('DELETE FROM command_results WHERE client_id = ?', (client_id,))
             cursor.execute('DELETE FROM commands WHERE client_id = ?', (client_id,))
             cursor.execute('DELETE FROM clients WHERE id = ?', (client_id,))
 
-    def update_socket_session(self, client_id: str, session_id: str) -> None:
-        """
-        Update or create a socket session for a client.
+# Socket.IO session methods removed - using HTTP polling only
 
-        Args:
-            client_id: The unique ID of the client
-            session_id: The socket session ID
-        """
-        now = datetime.now().isoformat()
-        self.db.execute("""
-            INSERT INTO socket_clients (client_id, session_id, connected_at)
-            VALUES (:client_id, :session_id, :connected_at)
-            ON CONFLICT(client_id) DO UPDATE SET
-                session_id=excluded.session_id,
-                connected_at=excluded.connected_at
-        """, {
-            'client_id': client_id,
-            'session_id': session_id,
-            'connected_at': now
-        })
 
-    def remove_socket_session(self, client_id: str) -> None:
-        """
-        Remove a socket session for a client.
-
-        Args:
-            client_id: The unique ID of the client
-        """
-        self.db.execute(
-            "DELETE FROM socket_clients WHERE client_id = ?",
-            (client_id,)
-        )
-
-    def get_socket_session(self, client_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Get a client's socket session.
-
-        Args:
-            client_id: The unique ID of the client
-
-        Returns:
-            Dictionary containing socket session data or None if not found
-        """
-        result = self.db.query(
-            "SELECT * FROM socket_clients WHERE client_id = ?",
-            (client_id,)
-        )
-        return result[0] if result else None
 
     def increment_commands_received(self, client_id: str) -> None:
         """

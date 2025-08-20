@@ -1,4 +1,4 @@
-# 📑 Documentação Thunder Command v2.0+
+# 📑 Documentação Thunder Command v2.1+
 
 <h1 align="center">
   <img src="../static/img/logo.png"   width="200">
@@ -29,9 +29,16 @@
 
 ---
 
-## 🆕 **Novidades v2.0.1**
+## 🆕 **Novidades v2.1.0**
 
-### ✅ **Correção Crítica - Injeção HTML**
+### 🔥 **Limpeza Completa WebSocket/Socket.IO**
+- **Remoção total**: Eliminados todos os vestígios de Socket.IO/WebSocket do código
+- **Endpoints removidos**: `/socket.io/` routes completamente removidos
+- **Database cleanup**: Tabela `socket_clients` removida do schema
+- **Interface 100% polling**: CSS, JavaScript e templates atualizados
+- **Logging simplificado**: `websocket.log` e funções relacionadas removidas
+
+### ✅ **Correção Crítica v2.0.1 - Injeção HTML**
 - **Problema**: Comandos "Inject HTML" mostravam código JavaScript visível
 - **Solução**: Cliente agora executa JavaScript corretamente para comandos HTML
 - **Impacto**: Interface mais limpa e funcionamento adequado
@@ -40,7 +47,7 @@
 - **Dual deployment**: Servidor legado (`app.py`) + moderno (`run.py`)
 - **Frontend modular**: npm + webpack + HTMX + Bootstrap 5.3.0
 - **Testes**: Framework pytest implementado
-- **HTTP Polling**: Exclusivo, sem dependências WebSocket
+- **HTTP Polling**: Exclusivo, sistema puramente polling
 
 ---
 

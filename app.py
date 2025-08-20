@@ -603,19 +603,7 @@ def serve_payload_js(dinamic_file, dinamic_id):
     response.headers['Expires'] = '0'
     return response
 
-# Socket.IO routes removed - using HTTP polling only
-# Add fallback routes to handle cached Socket.IO requests gracefully
-@app.route('/socket.io/', methods=['GET', 'POST'])
-@app.route('/socket.io/<path:path>', methods=['GET', 'POST'])
-def socket_io_fallback(path=''):
-    """Fallback handler for cached Socket.IO requests"""
-    app_logger.warning(f"Received Socket.IO request to /socket.io/{path} - returning deprecation notice")
-    return jsonify({
-        "error": "Socket.IO has been disabled", 
-        "message": "This application now uses HTTP polling only. Please clear your browser cache and reload.",
-        "polling_endpoint": "/command",
-        "status": "deprecated"
-    }), 410  # 410 Gone - resource no longer available
+# Socket.IO completely removed - using HTTP polling only
 
 # Route for serving static images
 @app.route('/static/img/<path:filename>')

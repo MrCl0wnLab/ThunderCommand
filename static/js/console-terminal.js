@@ -152,18 +152,14 @@ function refreshClientsForConsole() {
                 // Filtrar apenas clientes ativos
                 const onlineClients = data.clients.filter(client => client.active);
                 
-                // Ordenar: WebSocket primeiro, depois polling
-                onlineClients.sort((a, b) => {
-                    if (a.websocket !== b.websocket) return a.websocket ? -1 : 1;
-                    return 0;
-                });
+                // All clients use polling - no sorting needed
                 
                 // Adicionar ao dropdown
                 onlineClients.forEach(client => {
                     const option = document.createElement('option');
                     option.value = client.id;
                     
-                    const connection = client.websocket ? '⚡' : '';
+                    const connection = '🔄'; // All clients use polling
                     option.textContent = `Cliente: ${client.id.substring(0, 8)}... ${connection}`;
                     
                     dropdown.appendChild(option);

@@ -36,7 +36,7 @@ def setup_logger(name, log_file, level=logging.INFO):
 
 # Create different loggers for different components
 app_logger = setup_logger('app', 'app.log')
-websocket_logger = setup_logger('websocket', 'websocket.log')
+# websocket_logger removed - HTTP polling only
 command_logger = setup_logger('command', 'command.log')
 auth_logger = setup_logger('auth', 'auth.log')
 
@@ -57,20 +57,7 @@ def log_command(client_id, command_type, command_id, success=True, error=None):
     else:
         command_logger.error(f"Command failed - {log_data}")
 
-def log_websocket_event(event_type, client_id=None, data=None, error=None):
-    """Structured logging for WebSocket events"""
-    log_data = {
-        'timestamp': datetime.now().isoformat(),
-        'event_type': event_type,
-        'client_id': client_id,
-    }
-    if data:
-        log_data['data'] = data
-    if error:
-        log_data['error'] = str(error)
-        websocket_logger.error(f"WebSocket event error - {log_data}")
-    else:
-        websocket_logger.info(f"WebSocket event - {log_data}")
+# WebSocket logging removed - HTTP polling only
 
 def log_auth_event(event_type, username, success=True, error=None):
     """Structured logging for authentication events"""
