@@ -107,8 +107,8 @@ Detalhes Técnicos:
     - Implementa gerenciamento seguro de sessões
 
 Autores: MrCl0wn Security Lab
-Criação: Maio/2025
-Versão: 2.0 (HTTP Polling + HTMX)
+Criação: 2024
+Versão: 2.2 (Arquitetura Simplificada)
 """
 
 # Configuração para compatibilidade Windows com MIME types

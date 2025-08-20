@@ -145,16 +145,16 @@ graph TB
   class Clients,PollingClient,CommandExecutor,ClientIdentifier,SafeDOM,ResultSender client
 ```
 
-## Estrutura do Projeto (v2.0)
+## Estrutura do Projeto (v2.2)
 
 ```
 ThunderCommand/
-├── app.py                                # Servidor Flask principal - HTTP polling only
-# run.py removido - arquitetura simplificada 
-├── CLAUDE.md                             # Documentação técnica para desenvolvimento
-├── package.json                          # Configuração npm e scripts frontend
+├── app.py                                # Servidor Flask principal (arquitetura unificada)
+├── CLAUDE.md                             # Guia técnico para Claude Code
+├── docker-compose.yml                    # Configuração Docker para deploy
+├── package.json                          # Scripts npm e dependências frontend
 ├── requirements.txt                      # Dependências Python
-# Arquitetura simplificada - app.py único
+├── clear_db.py                           # Utilitário para resetar banco de dados
 ├── core/                                 # Módulos principais do sistema
 │   ├── database/                         # Camada de persistência SQLite
 │   │   ├── connection.py                 # Conexão e schema do banco
@@ -252,31 +252,57 @@ npm run dev
 Para melhorar a segurança, você pode configurar as credenciais de administrador e outras configurações via variáveis de ambiente:
 
 ```bash
-export SECRET_KEY="sua_key"
+# Configuração de segurança
+export SECRET_KEY="sua_chave_secreta_aqui"
 export ADMIN_USERNAME="seu_usuario_admin"
-export ADMIN_PASSWORD="sua_senha_admin"
+export ADMIN_PASSWORD="sua_senha_segura"
+
+# Configuração de ambiente
+export FLASK_ENV="development"  # ou "production"
+
+# Executar aplicação
 python app.py
+```
+
+### Execução com Docker
+
+```bash
+# Executar com docker-compose
+docker-compose up
+
+# Executar em background
+docker-compose up -d
+
+# Parar containers
+docker-compose down
 ```
 
 ### Comandos de Desenvolvimento
 
 ```bash
+# Executar aplicação
+python app.py                    # Modo produção
+FLASK_ENV=development python app.py  # Modo desenvolvimento
+npm run dev                      # Modo desenvolvimento (alternativo)
+npm start                        # Modo produção (alternativo)
+
 # Executar testes
-pytest                    # Todos os testes
-pytest tests/unit/        # Apenas testes unitários
-pytest tests/integration/ # Apenas testes de integração
+pytest                           # Todos os testes
+pytest tests/unit/               # Apenas testes unitários
+pytest tests/integration/        # Apenas testes de integração
+pytest -v --tb=short            # Verbose com traceback curto
 
 # Linting e qualidade de código
-npm run lint              # Verificar JavaScript
-eslint static/js/**/*.js  # Lint específico
+npm run lint                     # Verificar JavaScript
+eslint static/js/**/*.js         # Lint específico
 
-# Banco de dados
-python clear_db.py        # Limpar banco de dados
-rm -f thunder_command.db  # Remover banco (alternativa)
+# Gerenciamento de banco de dados
+python clear_db.py               # Limpar banco de dados
+rm -f thunder_command.db         # Remover banco (alternativa)
+sqlite3 thunder_command.db       # Inspeção manual do banco
 
-# Build e empacotamento
-npm start                 # Modo produção
-npm test                  # Executar testes frontend
+# Docker (opcional)
+docker-compose up                # Executar com Docker
 ```
 ### SCREENSHOTS
 
@@ -417,45 +443,80 @@ O sistema irá:
 - **Arquitetura de template componentizada** (`partials/` + `components/`) para manutenibilidade
 - **JavaScript modular** organizado em `static/js/modules/` para melhor manutenção
 
-## Melhorias e Correções na v2.0
+## Melhorias e Correções Recentes
 
-### Correções de Bugs Críticos
-- **🔧 CORREÇÃO CRÍTICA - Injeção HTML (v2.0.1)**: Corrigido bug onde comandos "Inject HTML" exibiam código JavaScript wrapper visível na página em vez do conteúdo HTML. Problema estava no cliente tratando JavaScript como string HTML.
-- **Manipulação DOM segura**: Corrigido erro "can't access property 'innerHTML', element is undefined" 
-- **Execução JavaScript**: Resolvido problema de comandos sempre retornando `undefined`
-- **Sintaxe JavaScript**: Corrigido tratamento de quebras de linha em literais de string
-- **Dashboard metrics**: Restaurado funcionamento dos gráficos "Tipos de Conexão" e "Atividade de Clientes"
+### v2.2 - Simplificação Arquitetural
+- **🔥 ARQUITETURA UNIFICADA**: Consolidação completa em `app.py` único para manutenção simplificada
+- **Deploy simplificado**: Apenas `python app.py` necessário para executar
+- **Suporte Docker**: `docker-compose.yml` para deploy em containers
+- **Compatibilidade preservada**: Todas as funcionalidades v2.x mantidas
 
-### Modernização Arquitetural
-- **Remoção completa do WebSocket**: Migração para HTTP polling exclusivo para maior compatibilidade
-- **Integração HTMX**: Interface administrativa modernizada com componentes reativos
-- **Persistência SQLite**: Todos os dados agora persistem permanentemente no banco
-- **Sistema de repositórios**: Separação clara entre lógica de negócio e acesso a dados
+### v2.1 - Limpeza Completa WebSocket/Socket.IO
+- **Remoção total**: Eliminação completa de referências WebSocket/Socket.IO
+- **HTTP polling puro**: Sistema 100% baseado em polling HTTP
+- **Performance otimizada**: Redução de dependências e complexidade
 
-### Funcionalidades Removidas
-- **Sistema de preview**: Removido completamente conforme solicitado pelos usuários
-- **Dependências Socket.IO**: Limpeza completa de código legado WebSocket
-- **Arquivos de teste**: Remoção de arquivos temporários de desenvolvimento
+### v2.0.1 - Correção Crítica Injeção HTML
+- **🔧 CORREÇÃO CRÍTICA**: Bug onde comandos "Inject HTML" mostravam código JavaScript visível
+- **Execução correta**: Cliente agora executa JavaScript adequadamente para comandos HTML
+- **Interface limpa**: Conteúdo HTML renderizado sem código wrapper
 
-### Segurança e Estabilidade
-- **Seleção de elementos multi-estratégia**: ID → classe → CSS selector para robustez
-- **Tratamento de erros aprimorado**: Feedback detalhado em todas as operações DOM
-- **Limpeza automática de recursos**: Remoção automática de clientes inativos
-- **Logging estruturado**: Sistema de logs detalhado para debugging e monitoramento
+### Funcionalidades Principais
+- **Execução JavaScript remota** com tratamento de erros robusto
+- **Manipulação DOM multi-estratégia** (ID → classe → CSS selector)
+- **Persistência SQLite** com padrão Repository para escalabilidade
+- **Dashboard HTMX responsivo** com atualizações em tempo real
+- **Sistema de logging estruturado** (app, command, auth) para debugging
+- **Suporte Docker** para deploy simplificado
+- **Configuração via variáveis de ambiente** para segurança
 
 ## Casos de Uso
 
-- Coleta informacional de dados em tempo real de usuários
-- Operação de Redteam
-- Contexto Educacional
-- Incrementar paginas de portal captive [Evil Portal](https://github.com/MrCl0wnLab/BR-EvilPortal-HTML-Files)
-- Modificação dinâmica de páginas em produção
-- Notificações em tempo real para usuários
-- Correção de bugs em páginas em produção sem necessidade de redeploy
-- Testes A/B dinâmicos
-- Adaptação da interface baseada em eventos do servidor
-- Mensagens de manutenção temporárias
-- Sistemas interativos em tempo real
+- **Pesquisa em Segurança**: Análise de comportamento de navegadores e vulnerabilidades web
+- **Educação em Cibersegurança**: Demonstração de técnicas de controle remoto para fins didáticos
+- **Testes de Penetração**: Validação de defesas contra ataques de controle remoto
+- **Portal Captive Educacional**: Integração com [Evil Portal](https://github.com/MrCl0wnLab/BR-EvilPortal-HTML-Files) para treinamentos
+- **Desenvolvimento Web**: Modificação dinâmica de páginas em ambientes controlados
+- **Prototipagem Rápida**: Testes A/B e adaptações de interface em tempo real
+- **Monitoramento de Aplicações**: Coleta de dados de uso em ambientes de teste
+
+## Troubleshooting
+
+### Problemas Comuns
+
+#### Erro de Porta em Uso
+```bash
+# Verificar processos na porta 5000
+lsof -i :5000
+# Matar processo se necessário
+pkill -f "python app.py"
+```
+
+#### Cliente Não Conecta
+```bash
+# Testar conectividade
+curl http://localhost:5000/
+curl http://localhost:5000/command?client_id=test
+
+# Verificar logs
+tail -f logs/app.log
+```
+
+#### Problemas de Permissão no Banco
+```bash
+# Resetar banco de dados
+python clear_db.py
+# ou
+rm -f thunder_command.db && python app.py
+```
+
+#### Docker Não Funciona
+```bash
+# Verificar se Docker está rodando
+docker --version
+# Rebuild containers
+docker-compose down && docker-compose up --build
+```
 
 
 
@@ -483,7 +544,7 @@ Contribuições de qualquer tipo são bem-vindas!
 
 ### Changelog v2.2
 
-#### v2.2.0 (Agosto 2025) - Simplificação Arquitetural
+#### v2.2.0 (Janeiro 2025) - Simplificação Arquitetural
 - **🔥 SIMPLIFICAÇÃO TOTAL**: Remoção da arquitetura híbrida, consolidação em `app.py` único
 - **Arquivos removidos**: `run.py`, diretório `app/` (application factory), diretório `config/`
 - **Scripts atualizados**: package.json agora usa apenas `python app.py`
@@ -491,7 +552,7 @@ Contribuições de qualquer tipo são bem-vindas!
 - **Manutenibilidade**: Redução da complexidade, mais fácil para novos desenvolvedores
 - **Funcionalidades mantidas**: Todas as funcionalidades core preservadas
 
-#### v2.1.0 (Agosto 2025) - Limpeza Completa WebSocket/Socket.IO
+#### v2.1.0 (Janeiro 2025) - Limpeza Completa WebSocket/Socket.IO
 - **🔥 REMOÇÃO TOTAL**: Eliminação completa de todas as referências e vestígios de Socket.IO/WebSocket
 - **Endpoints removidos**: `/socket.io/` routes completamente removidos (não retornam mais HTTP 410)
 - **Database schema**: Tabela `socket_clients` removida do schema de inicialização
@@ -500,12 +561,12 @@ Contribuições de qualquer tipo são bem-vindas!
 - **Logging cleanup**: `websocket_logger` e `log_websocket_event()` removidos
 - **Impacto**: Sistema agora é puramente HTTP polling sem código legado
 
-#### v2.0.1 (Agosto 2025) - Patch Crítico
+#### v2.0.1 (Janeiro 2025) - Patch Crítico
 - **🔧 CORREÇÃO CRÍTICA**: Bug de injeção HTML onde wrapper JavaScript aparecia visível na página
 - **Arquivo alterado**: `payload/cmd.js` - Método `executeCommand()` agora executa JavaScript para comandos HTML
 - **Impacto**: Comandos "Inject HTML" agora mostram apenas o conteúdo, sem código JavaScript visível
 
-#### v2.0.0 (Agosto 2025) - Lançamento Principal
+#### v2.0.0 (Janeiro 2025) - Lançamento Principal
 - **Principais mudanças**: Migração completa para HTTP polling, remoção do WebSocket, persistência SQLite, HTMX
 - **Arquitetura**: Sistema Flask unificado (`app.py`)
 - **Frontend**: Sistema de build npm/webpack, componentes modulares
