@@ -1,0 +1,30 @@
+services:
+  thundercommand:
+    image: python:3.13
+    container_name: thundercommand-app
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=sua_key
+      - ADMIN_USERNAME=tandera
+      - ADMIN_PASSWORD=tandera
+    ports:
+      - "5000:5000"
+    command: bash -c "pip install -r requirements.txt && python app.py"
+    restart: unless-stopped
+
+  frontend:
+    image: node:20
+    container_name: thundercommand-frontend
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: npm run dev
+    ports:
+      - "5173:5173"
+    depends_on:
+      - thundercommand
+    restart: unless-stopped
+    
