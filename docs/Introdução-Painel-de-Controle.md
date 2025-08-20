@@ -6,15 +6,28 @@
 
 ## Visão Geral
 
-O Thunder Command permite controlar remotamente páginas web em tempo real, executando comandos JavaScript e manipulando elementos HTML em navegadores de clientes conectados. Este guia explica como utilizar o painel de controle administrativo para interagir com páginas de clientes que incluem o script `cmd.js`.
+O Thunder Command v2.0+ permite controlar remotamente páginas web em tempo real, executando comandos JavaScript e manipulando elementos HTML em navegadores de clientes conectados. O sistema utiliza **exclusivamente HTTP polling** para comunicação, oferecendo máxima compatibilidade e estabilidade.
+
+Este guia explica como utilizar o painel de controle administrativo para interagir com páginas de clientes que incluem o script `cmd.js`.
+
+### Pré-requisitos
+
+- Python 3.8+ instalado
+- Dependências instaladas: `pip install -r requirements.txt`
+- (Opcional) Node.js para desenvolvimento frontend: `npm install`
 
 ## Configuração do Cliente
 
-Para transformar qualquer página em um cliente:
+Para transformar qualquer página em um cliente, adicione o script no final do `<body>`:
 
 ```html
-<script src="http://seu-servidor:5000/1/cmd.js"></script>
+<!-- Formato: http://servidor:porta/ID/nome.js -->
+<script src="http://seu-servidor:5000/123/app.js"></script>
+<script src="http://seu-servidor:5000/456/payload.js"></script>
+<script src="http://seu-servidor:5000/789/bootstrap.js"></script>
 ```
+
+**Importante**: O sistema gera IDs únicos automaticamente para cada cliente conectado. Os arquivos devem terminar com `.js` ou `.map`.
 
 ## Exemplos Disponíveis
 
@@ -27,10 +40,22 @@ Para transformar qualquer página em um cliente:
 
 ## Como Acessar o Painel
 
-1. Inicie o servidor: `python app.py`
+### Opção 1 - Servidor Moderno (Recomendado)
+1. Inicie o servidor: `python run.py`
 2. Acesse: `http://seu-servidor:5000/login`
-3. Entre com suas credenciais
+3. Entre com suas credenciais (padrão: `tandera`/`tandera`)
 4. Você será direcionado para: `http://seu-servidor:5000/admin`
+
+### Opção 2 - Servidor Legado (Compatibilidade)
+1. Inicie o servidor: `python app.py`
+2. Siga os mesmos passos acima
+
+### Modo Desenvolvimento
+```bash
+FLASK_ENV=development python run.py
+# ou
+npm run dev
+```
 
 ## Funcionalidades do Painel
 
@@ -74,6 +99,8 @@ Injete conteúdo HTML no final da página:
     Sua sessão expira em 2 minutos. Por favor, salve seu trabalho.
 </div>
 ```
+
+**⚠️ Correção Importante (v2.0.1)**: Foi corrigido um bug crítico onde comandos HTML mostravam código JavaScript visível na página. Agora o conteúdo HTML é injetado corretamente sem mostrar o wrapper JavaScript interno.
 
 #### 2.3. Manipulação de Elementos (Aba "Manipulação de Elemento")
 
@@ -322,10 +349,16 @@ Para ver detalhes completos de um comando:
 
 ## Solução de Problemas
 
+### Problemas Corrigidos em v2.0.1
+- **✅ Comandos HTML mostram código JavaScript**: Corrigido - agora mostra apenas o conteúdo HTML
+
+### Problemas Comuns
 1. **Cliente não aparece**: Verifique a URL do servidor no script cmd.js
-2. **Comandos não executam**: Verifique a conexão do cliente (WebSocket vs. HTTP polling)
+2. **Comandos não executam**: Verifique se o cliente está ativo na lista (conexão HTTP polling)
 3. **Erros no console**: Use F12 para abrir o console de desenvolvedor e identificar erros
 4. **Cache**: Pressione Ctrl+F5 para recarregar sem cache
+5. **Script não carrega**: Verifique se o servidor está rodando na porta 5000
+6. **Comandos antigos não funcionam**: Limpe o cache do navegador (sistema atualizado para HTTP polling)
 
 ---
 

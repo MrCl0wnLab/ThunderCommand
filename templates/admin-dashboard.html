@@ -790,8 +790,12 @@
                     const option = document.createElement('option');
                     option.value = client.id;
                     
+                    // Obter informações de navegador e sistema operacional
+                    const parsedUA = parseUserAgent(client.user_agent);
                     const status = client.active ? 'online' : 'offline';
-                    option.textContent = `Cliente: ${client.id.substring(0, 8)}... (${status})`;
+                    
+                    // Formatação: Cliente: {ID-RESUSIVO} - {IP} - {NAVEGADOR} - {OS}
+                    option.textContent = `Cliente: ${client.id.substring(0, 8)}... - ${client.ip || client.ip_address || 'N/A'} - ${parsedUA.browser} - ${parsedUA.os} (${status})`;
                     
                     if (!client.active) {
                         option.disabled = true;

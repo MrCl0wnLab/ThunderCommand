@@ -47,7 +47,7 @@ O autor desta página se isenta de qualquer responsabilidade pelo uso malicioso 
 - **Captura de resultados configurável** com métricas de performance
 - **Suporte JSONP** para arquivos locais e contorno de restrições CORS
 - **Persistência de IDs de clientes** via localStorage com limpeza automática
-- **Interface administrativa responsiva** com Bootstrap 5.3.6
+- **Interface administrativa responsiva** com Bootstrap 5.3.0
 - **Parser integrado de User-Agent** com ícones de navegador e sistema operacional
 - **Design moderno e responsivo** com tema escuro customizado
 - **Gráficos em tempo real** usando Chart.js para métricas de conexão
@@ -159,89 +159,121 @@ graph TB
     class JSExec,DOMManip,HTMLInject,Visibility execNode
 ```
 
-## Estrutura do Projeto
+## Estrutura do Projeto (v2.0)
 
 ```
 ThunderCommand/
-├── app.py                                # Servidor Flask principal - HTTP polling only (v2.0)
+├── app.py                                # Servidor Flask legado - HTTP polling only (compatibilidade)
+├── run.py                                # Servidor moderno - Application factory pattern 
 ├── CLAUDE.md                             # Documentação técnica para desenvolvimento
+├── package.json                          # Configuração npm e scripts frontend
+├── requirements.txt                      # Dependências Python
+├── app/                                  # Aplicação Flask moderna (application factory)
+│   ├── __init__.py                       # Factory e configuração de blueprints
+│   ├── api/                              # Rotas API organizadas por domínio
+│   ├── auth/                             # Módulo de autenticação
+│   ├── models/                           # Modelos de dados
+│   └── services/                         # Lógica de negócio
+├── config/                               # Configurações por ambiente
+│   ├── development.py                    # Configurações de desenvolvimento
+│   └── production.py                     # Configurações de produção
 ├── core/                                 # Módulos principais do sistema
-│   ├── database.py                       # Conexão SQLite e repositórios (ClientRepository, CommandRepository)
+│   ├── database/                         # Camada de persistência SQLite
+│   │   ├── connection.py                 # Conexão e schema do banco
+│   │   ├── client_repository.py          # Repositório de clientes
+│   │   └── command_repository.py         # Repositório de comandos
 │   └── utils/
 │       ├── logger.py                     # Sistema de logging multi-nível (app, command, auth)
 │       └── helpers.py                    # Utilitários auxiliares
-├── exemples/                             # Diretório com exemplos de implementação
-│   ├── template.html                     # Template básico para integração em outros projetos
-│   └── wifi.html                         # Exemplo de página para utilização em captive portals
+├── exemples/                             # Exemplos de implementação
+│   ├── example-class-id.html             # Exemplo targeting por classe/ID
+│   ├── exemple-clear.html                # Exemplo de limpeza de comandos
+│   └── exemple-wifi.html                 # Exemplo para captive portals
 ├── payload/                              # Scripts cliente para execução remota
-│   └── cmd.js                           # Cliente HTTP polling com estratégias inteligentes de execução
-├── README.md                             # Documentação completa do projeto (você está aqui)
-├── requirements.txt                      # Dependências Python (Flask, SQLAlchemy, sem Socket.IO)
+│   ├── cmd.js                           # Cliente HTTP polling (atual)
+│   └── cmd.js.new                       # Versão atualizada do cliente
 ├── static/                               # Recursos estáticos do aplicativo
-│   ├── css/                             # Estilos do aplicativo
-│   │   ├── custom-dark-red.css          # Tema escuro atual (v2.0)
-│   │   ├── custom-dark-red.scss         # Fonte SCSS do tema escuro
-│   │   └── olho-tandera.css             # Tema original (legado)
-│   ├── favicon.ico                      # Ícone do site para a barra de navegação
-│   ├── img/                             # Diretório de imagens e screenshots
-│   │   ├── admin.png                    # Screenshot do painel de administração v2.0
-│   │   ├── cliente.png                  # Screenshot da página cliente
-│   │   ├── flow.png                     # Diagrama de fluxo do sistema
-│   │   ├── login.png                    # Screenshot da página de login
-│   │   ├── logo_banner_letras.png       # Logo com texto para cabeçalhos
-│   │   ├── logo_banner.png              # Banner do logo para documentação
-│   │   └── logo.png                     # Logo principal do projeto
-│   └── js/                              # Scripts JavaScript do frontend
-│       ├── browser-os-icons.js          # Utilitário para ícones de navegadores e sistemas operacionais
-│       ├── console-terminal.js          # Interface de console estilo terminal
-│       ├── table-fixes-consolidated.js  # Correções e melhorias para tabelas
-│       ├── table-interactions.js        # Funcionalidades interativas para tabelas
-│       ├── table-pagination.js          # Paginação de tabelas para múltiplos clientes
-│       └── user-agent-parser.js         # Parser de User-Agent para identificação
-├── templates/                           # Templates HTML do aplicativo
-│   ├── admin-dashboard.html             # Dashboard principal com HTMX (v2.0)
-│   ├── login.html                       # Página de autenticação para acesso ao painel
-│   ├── server_to_client.html            # Página cliente que recebe comandos
-│   └── partials/                        # Componentes HTMX modulares (v2.0)
-│       ├── card_stats.html              # Cards de estatísticas com gráficos
-│       ├── capture_toggle.html          # Toggle de captura de resultados
-│       ├── clients_table.html           # Tabela de clientes conectados
-│       ├── dashboard_stats.html         # Estatísticas do dashboard
-│       ├── form_command_table.html      # Interface de envio de comandos
-│       ├── head.html                    # Cabeçalho HTML comum
-│       ├── header.html                  # Cabeçalho da página
-│       ├── logs_content.html            # Conteúdo de logs
-│       ├── logs_table.html              # Tabela de logs de comandos
-│       └── sidebar.html                 # Barra lateral de navegação
-└── thunder_command.db                   # Banco de dados SQLite (gerado automaticamente)
+│   ├── css/                             # Estilos e temas
+│   │   ├── custom-dark-red.css          # Tema escuro principal
+│   │   └── components/                  # Estilos por componente
+│   ├── js/                              # Scripts JavaScript modulares
+│   │   ├── app.js                       # Script principal da aplicação
+│   │   ├── modules/                     # Módulos JavaScript organizados
+│   │   │   ├── client-manager.js        # Gerenciamento de clientes
+│   │   │   ├── command-handler.js       # Processamento de comandos
+│   │   │   └── dashboard-ui.js          # Interface do dashboard
+│   │   └── vendor/                      # Bibliotecas de terceiros
+│   └── img/                             # Imagens e screenshots atualizados
+├── templates/                           # Templates HTML modulares
+│   ├── base.html                        # Template base
+│   ├── admin_base.html                  # Base para páginas administrativas
+│   ├── admin-dashboard.html             # Dashboard principal HTMX
+│   ├── login.html                       # Autenticação
+│   ├── server_to_client.html            # Página cliente
+│   ├── partials/                        # Componentes HTMX reutilizáveis
+│   └── components/                      # Componentes UI modulares
+├── tests/                                # Suíte de testes
+│   ├── unit/                            # Testes unitários
+│   │   └── test_command_executor.py     # Testes de execução de comandos
+│   └── integration/                     # Testes de integração
+│       └── test_routes.py               # Testes de rotas
+├── logs/                                # Logs da aplicação (auto-gerados)
+│   ├── app.log                          # Logs gerais
+│   ├── command.log                      # Logs de comandos
+│   └── auth.log                         # Logs de autenticação
+└── thunder_command.db                   # Banco de dados SQLite (auto-criado)
 ```
 
 ## Instalação e Configuração
 
 ### Pré-requisitos
 
-- Python 3.8+ (testado com Python 3.13)
-- pip (gerenciador de pacotes do Python)
-- Flask e SQLAlchemy (sem dependências WebSocket)
+- **Python 3.8+** (testado com Python 3.13)
+- **Node.js** (opcional, para desenvolvimento frontend)
+- **pip** (gerenciador de pacotes do Python)
+- **npm** (gerenciador de pacotes do Node.js)
 
-### Instalação
+### Instalação Rápida
 
-1. Clone o repositório ou baixe os arquivos
-2. Instale as dependências do projeto:
+1. **Clone o repositório**:
+```bash
+git clone https://github.com/MrCl0wnLab/ThunderCommand.git
+cd ThunderCommand
+```
 
+2. **Instale dependências Python**:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Execute o servidor Flask:
+3. **Instale dependências frontend** (opcional):
+```bash
+npm install
+```
 
+4. **Execute o servidor** (escolha uma opção):
+
+**Opção A - Servidor legado (compatibilidade)**:
 ```bash
 python app.py
 ```
 
-4. Acesse as páginas no navegador:
+**Opção B - Servidor moderno (recomendado)**:
+```bash
+python run.py
+```
+
+**Opção C - Modo desenvolvimento**:
+```bash
+FLASK_ENV=development python run.py
+# ou
+npm run dev
+```
+
+5. **Acesse a aplicação**:
    - Cliente: `http://localhost:5000/`
-   - Administração: `http://localhost:5000/admin` (credenciais padrão: `tandera`/`tandera`)
+   - Administração: `http://localhost:5000/admin`
+   - **Credenciais padrão**: `tandera` / `tandera`
 
 ### Configuração via Variáveis de Ambiente
 
@@ -251,7 +283,28 @@ Para melhorar a segurança, você pode configurar as credenciais de administrado
 export SECRET_KEY="sua_key"
 export ADMIN_USERNAME="seu_usuario_admin"
 export ADMIN_PASSWORD="sua_senha_admin"
-python app.py
+python run.py
+```
+
+### Comandos de Desenvolvimento
+
+```bash
+# Executar testes
+pytest                    # Todos os testes
+pytest tests/unit/        # Apenas testes unitários
+pytest tests/integration/ # Apenas testes de integração
+
+# Linting e qualidade de código
+npm run lint              # Verificar JavaScript
+eslint static/js/**/*.js  # Lint específico
+
+# Banco de dados
+python clear_db.py        # Limpar banco de dados
+rm -f thunder_command.db  # Remover banco (alternativa)
+
+# Build e empacotamento
+npm start                 # Modo produção
+npm test                  # Executar testes frontend
 ```
 ### SCREENSHOTS
 
@@ -353,8 +406,20 @@ O sistema irá:
 
 ## Arquitetura Técnica (v2.0)
 
-### Backend (Flask Puro + SQLite)
+### Backend - Arquitetura Híbrida
 
+**Opção 1 - Servidor Legado (`app.py`)**:
+- Arquivo único com todas as rotas e lógica de negócio
+- Compatibilidade com versões anteriores
+- Ideal para deploy simples e quick start
+
+**Opção 2 - Application Factory (`run.py` + `app/`)**:
+- Padrão moderno Flask com blueprints organizados
+- Separação clara entre domínios (API, Auth, Models, Services)
+- Configurações por ambiente (development/production)
+- Escalabilidade e manutenibilidade aprimoradas
+
+**Características Comuns**:
 - **Comunicação exclusiva via HTTP polling** - sem dependências WebSocket
 - **Persistência SQLite** com padrão Repository para clientes e comandos
 - **API REST em Flask** com endpoints para polling, resultados e administração
@@ -373,20 +438,23 @@ O sistema irá:
 - **Persistência de ID de cliente** via localStorage com geração automática
 - **Envio de resultados configurável** com métricas de performance (tempo de execução)
 
-### Admin (Dashboard Moderno com HTMX)
+### Frontend (Dashboard Moderno com HTMX)
 
-- **Interface Bootstrap 5.3.6** com tema escuro personalizado
+- **Interface Bootstrap 5.3.0** com tema escuro personalizado
+- **Sistema de build npm/webpack** para desenvolvimento modular
 - **Componentes HTMX modulares** para atualizações parciais sem JavaScript complexo
 - **Gráficos Chart.js em tempo real** para métricas de conexão e atividade
 - **Editor de código integrado** para inserção de JavaScript e HTML
 - **Parser de User-Agent avançado** com ícones de navegadores e sistemas operacionais
 - **Feedback visual em tempo real** sobre estado dos clientes e execução de comandos
 - **Sistema de toggle configurável** para captura de resultados
-- **Arquitetura de template componentizada** (partials/) para manutenibilidade
+- **Arquitetura de template componentizada** (`partials/` + `components/`) para manutenibilidade
+- **JavaScript modular** organizado em `static/js/modules/` para melhor manutenção
 
 ## Melhorias e Correções na v2.0
 
 ### Correções de Bugs Críticos
+- **🔧 CORREÇÃO CRÍTICA - Injeção HTML (v2.0.1)**: Corrigido bug onde comandos "Inject HTML" exibiam código JavaScript wrapper visível na página em vez do conteúdo HTML. Problema estava no cliente tratando JavaScript como string HTML.
 - **Manipulação DOM segura**: Corrigido erro "can't access property 'innerHTML', element is undefined" 
 - **Execução JavaScript**: Resolvido problema de comandos sempre retornando `undefined`
 - **Sintaxe JavaScript**: Corrigido tratamento de quebras de linha em literais de string
@@ -448,7 +516,16 @@ Contribuições de qualquer tipo são bem-vindas!
 ---
 
 ### Changelog v2.0
-- **Data**: Agosto 2025
-- **Principais mudanças**: Migração completa para HTTP polling, remoção do WebSocket, persistência SQLite, HTMX, correções de bugs críticos
+
+#### v2.0.1 (Agosto 2025) - Patch Crítico
+- **🔧 CORREÇÃO CRÍTICA**: Bug de injeção HTML onde wrapper JavaScript aparecia visível na página
+- **Arquivo alterado**: `payload/cmd.js` - Método `executeCommand()` agora executa JavaScript para comandos HTML
+- **Impacto**: Comandos "Inject HTML" agora mostram apenas o conteúdo, sem código JavaScript visível
+
+#### v2.0.0 (Agosto 2025) - Lançamento Principal
+- **Principais mudanças**: Migração completa para HTTP polling, remoção do WebSocket, persistência SQLite, HTMX
+- **Arquitetura moderna**: Suporte a application factory pattern (`run.py` + `app/`)
+- **Frontend**: Sistema de build npm/webpack, componentes modulares
+- **Testes**: Framework pytest implementado
 - **Compatibilidade**: Quebra compatibilidade com versões anteriores que dependiam de Socket.IO
 - **Status**: Versão estável para produção em ambientes controlados
